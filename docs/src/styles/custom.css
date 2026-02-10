@@ -1,6 +1,5 @@
 /* ============================================
-   Token Cost Design System — Phase 1: Foundation
-   "Ink & Warmth" aesthetic
+   Token Cost Design System — "Ink & Warmth"
    ============================================ */
 
 /* --- Typography Imports --- */
@@ -59,6 +58,9 @@
 
   --sl-font: 'Inter Variable', 'Inter', sans-serif;
   --sl-font-mono: 'JetBrains Mono Variable', monospace;
+
+  /* Easing */
+  --ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 }
 
 :root[data-theme='dark'] {
@@ -78,4 +80,256 @@ body::before {
   background-repeat: repeat;
   mix-blend-mode: overlay;
   z-index: 9999;
+}
+
+/* ============================================
+   Phase 2: Component Enhancements
+   ============================================ */
+
+/* --- Cards --- */
+.card {
+  background: var(--bg-ink);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow:
+    0 0 0 1px rgba(201, 169, 98, 0.03),
+    0 4px 24px rgba(0, 0, 0, 0.4);
+  transition: all 200ms var(--ease);
+}
+
+.card:hover {
+  border-color: var(--accent);
+  box-shadow:
+    0 0 0 1px rgba(201, 169, 98, 0.1),
+    0 8px 32px rgba(0, 0, 0, 0.5);
+  transform: translateY(-2px);
+}
+
+.card .icon {
+  color: var(--accent);
+}
+
+/* Starlight Card component overrides */
+.sl-link-card {
+  border-radius: 12px;
+  transition: all 200ms var(--ease);
+}
+
+.sl-link-card:hover {
+  transform: translateY(-2px);
+}
+
+/* --- Code Blocks --- */
+.expressive-code {
+  border-radius: 12px !important;
+  overflow: hidden;
+  border-top: 2px solid var(--accent);
+}
+
+.expressive-code pre {
+  font-family: var(--sl-font-mono);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+
+.expressive-code:hover {
+  border-top-color: var(--accent-hover);
+}
+
+/* --- Tables --- */
+table {
+  border-collapse: separate;
+  border-spacing: 0;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  width: 100%;
+}
+
+th {
+  background: color-mix(in srgb, var(--accent) 8%, var(--bg-ink));
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+  padding: 0.75rem 1rem;
+  text-align: left;
+}
+
+td {
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  font-variant-numeric: tabular-nums;
+}
+
+tr:hover td {
+  background: color-mix(in srgb, var(--accent) 4%, var(--bg-ink));
+}
+
+/* --- Live Data Badge --- */
+.live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: color-mix(in srgb, var(--accent) 10%, transparent);
+  border: 1px solid var(--accent);
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+.live-badge::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: pulse-dot 2s ease-in-out infinite;
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.5); }
+}
+
+/* --- Pricing Values --- */
+.pricing-value {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* ============================================
+   Phase 3: Animation & Motion
+   ============================================ */
+
+/* --- Hero Reveal Sequence --- */
+@keyframes ink-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+    filter: blur(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+.hero h1,
+[data-page-type="splash"] .hero h1 {
+  animation: ink-reveal 600ms var(--ease) both;
+}
+
+.hero .tagline,
+[data-page-type="splash"] .hero .tagline {
+  animation: ink-reveal 600ms var(--ease) 200ms both;
+}
+
+.hero .action,
+.hero .sl-flex,
+[data-page-type="splash"] .hero .sl-flex.actions {
+  animation: ink-reveal 600ms var(--ease) 400ms both;
+}
+
+/* --- Logo Pulse --- */
+.site-title img {
+  animation: gentle-pulse 4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+@keyframes gentle-pulse {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+}
+
+/* --- Link Hover Underline --- */
+.sl-markdown-content a:not([class]) {
+  text-decoration: none;
+  background-image: linear-gradient(var(--accent), var(--accent));
+  background-size: 100% 1px;
+  background-position: 0 100%;
+  background-repeat: no-repeat;
+  transition: background-size 200ms var(--ease);
+}
+
+.sl-markdown-content a:not([class]):hover {
+  background-size: 100% 2px;
+}
+
+/* --- Sidebar Active Border --- */
+@keyframes sidebar-expand {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+[aria-current="page"]::before {
+  animation: sidebar-expand 300ms var(--ease) both;
+  transform-origin: center;
+}
+
+/* --- Card Entrance (scroll-triggered via CSS) --- */
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(16px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.card-grid > * {
+  animation: fade-up 400ms var(--ease) both;
+}
+
+.card-grid > *:nth-child(1) { animation-delay: 0ms; }
+.card-grid > *:nth-child(2) { animation-delay: 100ms; }
+.card-grid > *:nth-child(3) { animation-delay: 200ms; }
+.card-grid > *:nth-child(4) { animation-delay: 300ms; }
+
+/* ============================================
+   Phase 4: Polish
+   ============================================ */
+
+/* --- Frosted Glass Navigation --- */
+header.header {
+  background: rgba(0, 0, 0, 0.8) !important;
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+  border-bottom: 1px solid var(--border);
+}
+
+[data-theme="light"] header.header {
+  background: rgba(245, 242, 238, 0.8) !important;
+}
+
+/* --- Button States --- */
+a[role="button"],
+.action.primary {
+  transition: all 200ms var(--ease);
+}
+
+a[role="button"]:hover,
+.action.primary:hover {
+  transform: translateY(-1px);
+}
+
+a[role="button"]:active,
+.action.primary:active {
+  transform: translateY(0);
+}
+
+/* --- Reduced Motion --- */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
 }
