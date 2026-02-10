@@ -5,10 +5,10 @@ export default defineConfig({
   site: 'https://tokencost.dev',
   integrations: [
     starlight({
-      title: 'Token Cost',
+      title: 'Tariff MCP',
       logo: {
         src: './src/assets/tokencost-logo.png',
-        alt: 'Token Cost',
+        alt: 'Tariff MCP',
       },
       customCss: ['./src/styles/custom.css'],
       favicon: '/favicon.ico',

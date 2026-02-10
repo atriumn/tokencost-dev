@@ -1,9 +1,9 @@
 ---
 title: Getting Started
-description: Install and configure the Token Cost MCP server in Claude Code, Cursor, or any MCP client.
+description: Install and configure the Tariff MCP server in Claude Code, Cursor, or any MCP client.
 ---
 
-Token Cost (`@atriumn/tariff`) is an MCP server that provides real-time LLM pricing data. It runs as a local process and communicates over stdio.
+Tariff (`@atriumn/tariff`) is an MCP server that provides real-time LLM pricing data. It runs as a local process and communicates over stdio.
 
 ## Prerequisites
 
