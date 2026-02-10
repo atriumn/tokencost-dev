@@ -1,0 +1,391 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import type { ModelEntry } from "./pricing.js";
+
+// Mock the pricing module
+vi.mock("./pricing.js", () => ({
+  getModels: vi.fn(),
+  refreshPrices: vi.fn(),
+}));
+
+// Import after mock setup
+import { executeTool } from "./tools.js";
+import { getModels, refreshPrices } from "./pricing.js";
+
+/** Helper to build a minimal ModelEntry */
+function makeModel(overrides: Partial<ModelEntry> & { key: string }): ModelEntry {
+  return {
+    input_cost_per_token: 0.000003,
+    output_cost_per_token: 0.000015,
+    input_cost_per_million: 3.0,
+    output_cost_per_million: 15.0,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    max_tokens: null,
+    litellm_provider: "anthropic",
+    mode: "chat",
+    supports_vision: true,
+    supports_function_calling: true,
+    supports_parallel_function_calling: false,
+    ...overrides,
+  };
+}
+
+const testModels: Record<string, ModelEntry> = {
+  "claude-sonnet-4-5": makeModel({
+    key: "claude-sonnet-4-5",
+    litellm_provider: "anthropic",
+    input_cost_per_token: 0.000003,
+    output_cost_per_token: 0.000015,
+    input_cost_per_million: 3.0,
+    output_cost_per_million: 15.0,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    supports_vision: true,
+    supports_function_calling: true,
+    supports_parallel_function_calling: true,
+  }),
+  "gpt-4o": makeModel({
+    key: "gpt-4o",
+    litellm_provider: "openai",
+    input_cost_per_token: 0.000005,
+    output_cost_per_token: 0.000015,
+    input_cost_per_million: 5.0,
+    output_cost_per_million: 15.0,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+    supports_vision: true,
+    supports_function_calling: true,
+    supports_parallel_function_calling: true,
+  }),
+  "gpt-4o-mini": makeModel({
+    key: "gpt-4o-mini",
+    litellm_provider: "openai",
+    input_cost_per_token: 0.00000015,
+    output_cost_per_token: 0.0000006,
+    input_cost_per_million: 0.15,
+    output_cost_per_million: 0.6,
+    max_input_tokens: 128000,
+    max_output_tokens: 16384,
+  }),
+  "gemini-2.0-flash": makeModel({
+    key: "gemini-2.0-flash",
+    litellm_provider: "google",
+    input_cost_per_token: 0.0000001,
+    output_cost_per_token: 0.0000004,
+    input_cost_per_million: 0.1,
+    output_cost_per_million: 0.4,
+    max_input_tokens: 1000000,
+    max_output_tokens: 8192,
+    mode: "chat",
+    supports_vision: false,
+    supports_function_calling: false,
+    supports_parallel_function_calling: false,
+  }),
+  "text-embedding-3-large": makeModel({
+    key: "text-embedding-3-large",
+    litellm_provider: "openai",
+    input_cost_per_token: 0.00000013,
+    output_cost_per_token: 0,
+    input_cost_per_million: 0.13,
+    output_cost_per_million: 0,
+    max_input_tokens: 8191,
+    max_output_tokens: null,
+    mode: "embedding",
+    supports_vision: false,
+    supports_function_calling: false,
+    supports_parallel_function_calling: false,
+  }),
+};
+
+describe("executeTool", () => {
+  beforeEach(() => {
+    vi.mocked(getModels).mockResolvedValue(testModels);
+    vi.mocked(refreshPrices).mockResolvedValue({
+      count: 5,
+      timestamp: "2025-01-15T12:00:00.000Z",
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  describe("get_model_details", () => {
+    it("returns formatted output for a valid model", async () => {
+      const result = await executeTool("get_model_details", {
+        model_name: "claude-sonnet-4-5",
+      });
+
+      expect(result.content).toHaveLength(1);
+      const text = result.content[0].text;
+      expect(text).toContain("Model: claude-sonnet-4-5");
+      expect(text).toContain("Provider: anthropic");
+      expect(text).toContain("Mode: chat");
+      expect(text).toContain("Pricing (per 1M tokens):");
+      expect(text).toContain("$3.00");
+      expect(text).toContain("$15.00");
+      expect(text).toContain("200K");
+      expect(text).toContain("vision");
+      expect(text).toContain("function_calling");
+    });
+
+    it("returns helpful message for unknown model", async () => {
+      const result = await executeTool("get_model_details", {
+        model_name: "nonexistent-model-xyz-9999",
+      });
+
+      expect(result.content).toHaveLength(1);
+      const text = result.content[0].text;
+      expect(text).toContain('No model found matching "nonexistent-model-xyz-9999"');
+      expect(text).toContain("compare_models");
+    });
+
+    it("works with fuzzy matched model names", async () => {
+      // "gpt 4o" should fuzzy-match "gpt-4o"
+      const result = await executeTool("get_model_details", {
+        model_name: "gpt-4o",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Model: gpt-4o");
+      expect(text).toContain("Provider: openai");
+    });
+
+    it("shows 'none listed' when model has no capabilities", async () => {
+      const result = await executeTool("get_model_details", {
+        model_name: "gemini-2.0-flash",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Capabilities: none listed");
+    });
+  });
+
+  describe("calculate_estimate", () => {
+    it("computes correct costs for given token counts", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "claude-sonnet-4-5",
+        input_tokens: 1000,
+        output_tokens: 500,
+      });
+
+      expect(result.content).toHaveLength(1);
+      const text = result.content[0].text;
+      expect(text).toContain("Cost Estimate for claude-sonnet-4-5");
+
+      // input: 1000 * 0.000003 = 0.003
+      // output: 500 * 0.000015 = 0.0075
+      // total: 0.0105
+      expect(text).toContain("$0.003000");
+      expect(text).toContain("$0.007500");
+      expect(text).toContain("$0.0105");
+    });
+
+    it("handles zero tokens", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "gpt-4o",
+        input_tokens: 0,
+        output_tokens: 0,
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Cost Estimate for gpt-4o");
+      expect(text).toContain("$0.00000000");
+    });
+
+    it("handles large token counts", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "gpt-4o-mini",
+        input_tokens: 1000000,
+        output_tokens: 1000000,
+      });
+
+      const text = result.content[0].text;
+      // input: 1M * 0.00000015 = 0.15
+      // output: 1M * 0.0000006 = 0.6
+      expect(text).toContain("Cost Estimate for gpt-4o-mini");
+    });
+
+    it("returns error for unknown model", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "nonexistent-model-xyz-9999",
+        input_tokens: 1000,
+        output_tokens: 500,
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain('No model found matching "nonexistent-model-xyz-9999"');
+    });
+  });
+
+  describe("compare_models", () => {
+    it("filters by provider", async () => {
+      const result = await executeTool("compare_models", {
+        provider: "openai",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("provider: openai");
+      // Should include openai models
+      expect(text).toContain("gpt-4o");
+      // Should not include anthropic or google models
+      expect(text).not.toContain("claude-sonnet-4-5");
+    });
+
+    it("filters by min_context", async () => {
+      const result = await executeTool("compare_models", {
+        min_context: 200000,
+      });
+
+      const text = result.content[0].text;
+      // Only models with max_input_tokens >= 200000 should appear
+      // claude-sonnet-4-5 (200000) and gemini-2.0-flash (1000000) qualify
+      expect(text).toContain("claude-sonnet-4-5");
+      expect(text).toContain("gemini-2.0-flash");
+      // gpt-4o (128000) should NOT appear
+      expect(text).not.toContain("gpt-4o-mini");
+    });
+
+    it("filters by mode", async () => {
+      const result = await executeTool("compare_models", {
+        mode: "embedding",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("text-embedding-3-large");
+      expect(text).toContain("mode: embedding");
+      expect(text).not.toContain("gpt-4o-mini");
+    });
+
+    it("sorts by cost-effectiveness (lowest input cost first)", async () => {
+      const result = await executeTool("compare_models", {
+        provider: "openai",
+        mode: "chat",
+      });
+
+      const text = result.content[0].text;
+      // gpt-4o-mini (0.00000015) should come before gpt-4o (0.000005)
+      const miniIndex = text.indexOf("gpt-4o-mini");
+      const gpt4oIndex = text.indexOf("gpt-4o\n");
+      // gpt-4o-mini should appear first
+      expect(miniIndex).toBeLessThan(gpt4oIndex);
+    });
+
+    it("returns message when no models match", async () => {
+      const result = await executeTool("compare_models", {
+        provider: "nonexistent-provider-xyz",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("No models match the given criteria");
+    });
+
+    it("limits to 5 results and shows total count", async () => {
+      const result = await executeTool("compare_models", {});
+
+      const text = result.content[0].text;
+      expect(text).toContain("models matched total");
+    });
+
+    it("supports combined filters", async () => {
+      const result = await executeTool("compare_models", {
+        provider: "openai",
+        min_context: 100000,
+        mode: "chat",
+      });
+
+      const text = result.content[0].text;
+      // gpt-4o and gpt-4o-mini have 128000 context and are openai chat
+      expect(text).toContain("gpt-4o");
+      // embedding model should be excluded by mode filter
+      expect(text).not.toContain("text-embedding");
+    });
+  });
+
+  describe("refresh_prices", () => {
+    it("returns count and timestamp", async () => {
+      const result = await executeTool("refresh_prices", {});
+
+      const text = result.content[0].text;
+      expect(text).toContain("Pricing data refreshed successfully");
+      expect(text).toContain("Models loaded: 5");
+      expect(text).toContain("Timestamp: 2025-01-15T12:00:00.000Z");
+    });
+
+    it("calls refreshPrices from pricing module", async () => {
+      await executeTool("refresh_prices", {});
+      expect(refreshPrices).toHaveBeenCalledOnce();
+    });
+  });
+
+  describe("error handling", () => {
+    it("returns error for unknown tool name", async () => {
+      const result = await executeTool("nonexistent_tool", {});
+
+      const text = result.content[0].text;
+      expect(text).toContain("Unknown tool: nonexistent_tool");
+    });
+
+    it("returns error for invalid get_model_details args (missing model_name)", async () => {
+      const result = await executeTool("get_model_details", {});
+
+      const text = result.content[0].text;
+      expect(text).toContain("Error:");
+    });
+
+    it("returns error for invalid get_model_details args (empty model_name)", async () => {
+      const result = await executeTool("get_model_details", {
+        model_name: "",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Error:");
+    });
+
+    it("returns error for invalid calculate_estimate args (missing fields)", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "gpt-4o",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Error:");
+    });
+
+    it("returns error for negative token counts", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "gpt-4o",
+        input_tokens: -100,
+        output_tokens: 500,
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Error:");
+    });
+
+    it("handles getModels throwing an error", async () => {
+      vi.mocked(getModels).mockRejectedValueOnce(
+        new Error("No pricing data available"),
+      );
+
+      const result = await executeTool("get_model_details", {
+        model_name: "gpt-4o",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Error:");
+      expect(text).toContain("No pricing data available");
+    });
+
+    it("handles refreshPrices throwing an error", async () => {
+      vi.mocked(refreshPrices).mockRejectedValueOnce(
+        new Error("Network failure"),
+      );
+
+      const result = await executeTool("refresh_prices", {});
+
+      const text = result.content[0].text;
+      expect(text).toContain("Error:");
+      expect(text).toContain("Network failure");
+    });
+  });
+});
