@@ -1,0 +1,45 @@
+---
+title: Token Cost
+description: Real LLM pricing data for your AI tools — not hallucinated guesses.
+template: splash
+hero:
+  tagline: Real LLM pricing data for your AI tools — not hallucinated guesses. An MCP server that gives Claude, Cursor, and other AI assistants accurate, up-to-date model pricing from the LiteLLM community registry.
+  actions:
+    - text: Get Started
+      link: /getting-started/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/atriumn/tariff
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Install
+
+Add to your Claude Code config in one command:
+
+```bash
+claude mcp add tariff -- npx -y @atriumn/tariff
+```
+
+Or add the JSON config manually — see the [Getting Started](/getting-started/) guide.
+
+## What can it do?
+
+<CardGrid stagger>
+  <Card title="Model Lookup" icon="magnifier">
+    Look up pricing, context windows, and capabilities for any LLM. Fuzzy matching means you don't need exact model IDs.
+  </Card>
+  <Card title="Cost Estimation" icon="seti:notebook">
+    Estimate the cost for a given number of input and output tokens on any model. Know what you'll spend before you spend it.
+  </Card>
+  <Card title="Model Comparison" icon="list-format">
+    Filter and compare models by provider, context window, or mode. Find the most cost-effective model for your workload.
+  </Card>
+  <Card title="Live Data" icon="refresh">
+    Pricing data sourced from the LiteLLM community registry, cached for 24 hours with on-demand refresh.
+  </Card>
+</CardGrid>
