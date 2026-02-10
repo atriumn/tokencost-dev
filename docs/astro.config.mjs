@@ -10,6 +10,7 @@ export default defineConfig({
         src: './src/assets/tokencost-logo.png',
         alt: 'Token Cost',
       },
+      customCss: ['./src/styles/custom.css'],
       social: [
         {
           icon: 'github',
