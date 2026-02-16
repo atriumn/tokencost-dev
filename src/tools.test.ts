@@ -2,14 +2,18 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { ModelEntry } from "./pricing.js";
 
 // Mock the pricing module
-vi.mock("./pricing.js", () => ({
-  getModels: vi.fn(),
-  refreshPrices: vi.fn(),
-}));
+vi.mock("./pricing.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("./pricing.js")>();
+  return {
+    ...actual,
+    getModels: vi.fn(),
+    refreshPrices: vi.fn(),
+  };
+});
 
 // Import after mock setup
-import { executeTool } from "./tools.js";
-import { getModels, refreshPrices } from "./pricing.js";
+import { executeTool, calculateTieredCost } from "./tools.js";
+import { getModels, refreshPrices, TIERED_PRICING_THRESHOLD } from "./pricing.js";
 
 /** Helper to build a minimal ModelEntry */
 function makeModel(overrides: Partial<ModelEntry> & { key: string }): ModelEntry {
@@ -18,6 +22,10 @@ function makeModel(overrides: Partial<ModelEntry> & { key: string }): ModelEntry
     output_cost_per_token: 0.000015,
     input_cost_per_million: 3.0,
     output_cost_per_million: 15.0,
+    input_cost_per_token_above_200k: null,
+    output_cost_per_token_above_200k: null,
+    input_cost_per_million_above_200k: null,
+    output_cost_per_million_above_200k: null,
     max_input_tokens: 200000,
     max_output_tokens: 8192,
     max_tokens: null,
@@ -80,6 +88,20 @@ const testModels: Record<string, ModelEntry> = {
     supports_vision: false,
     supports_function_calling: false,
     supports_parallel_function_calling: false,
+  }),
+  "claude-opus-4": makeModel({
+    key: "claude-opus-4",
+    litellm_provider: "anthropic",
+    input_cost_per_token: 0.000015,
+    output_cost_per_token: 0.000075,
+    input_cost_per_million: 15.0,
+    output_cost_per_million: 75.0,
+    input_cost_per_token_above_200k: 0.00003,
+    output_cost_per_token_above_200k: 0.00015,
+    input_cost_per_million_above_200k: 30.0,
+    output_cost_per_million_above_200k: 150.0,
+    max_input_tokens: 200000,
+    max_output_tokens: 32000,
   }),
   "text-embedding-3-large": makeModel({
     key: "text-embedding-3-large",
@@ -388,5 +410,126 @@ describe("executeTool", () => {
       expect(text).toContain("Error:");
       expect(text).toContain("Network failure");
     });
+  });
+
+  describe("tiered pricing", () => {
+    it("calculates tiered cost when tokens exceed 200K", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "claude-opus-4",
+        input_tokens: 300000,
+        output_tokens: 250000,
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Cost Estimate for claude-opus-4");
+      // Input: 200K × $15/1M = $3.00, 100K × $30/1M = $3.00
+      expect(text).toContain("Input (base):");
+      expect(text).toContain("Input (>200K):");
+      expect(text).toContain("Output (base):");
+      expect(text).toContain("Output (>200K):");
+      // Total: input $3+$3=6, output $15+$7.50=22.50 → $28.50
+      expect(text).toContain("$28.50");
+    });
+
+    it("uses flat rate when tokens are below threshold on a tiered model", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "claude-opus-4",
+        input_tokens: 100000,
+        output_tokens: 50000,
+      });
+
+      const text = result.content[0].text;
+      // Should use flat format, not tiered
+      expect(text).not.toContain("(base):");
+      expect(text).not.toContain("(>200K):");
+      expect(text).toContain("Input:");
+      expect(text).toContain("Output:");
+    });
+
+    it("uses flat rate for non-tiered model even above 200K tokens", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "gpt-4o",
+        input_tokens: 300000,
+        output_tokens: 300000,
+      });
+
+      const text = result.content[0].text;
+      expect(text).not.toContain("(base):");
+      expect(text).not.toContain("(>200K):");
+    });
+
+    it("uses flat rate at exact boundary (200K tokens)", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "claude-opus-4",
+        input_tokens: 200000,
+        output_tokens: 200000,
+      });
+
+      const text = result.content[0].text;
+      // Exactly at threshold → flat rate, no tiering
+      expect(text).not.toContain("(base):");
+      expect(text).not.toContain("(>200K):");
+    });
+
+    it("shows tiered pricing section in get_model_details for tiered models", async () => {
+      const result = await executeTool("get_model_details", {
+        model_name: "claude-opus-4",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Tiered Pricing");
+      expect(text).toContain("$30.00");
+      expect(text).toContain("$150.00");
+    });
+
+    it("omits tiered pricing section in get_model_details for non-tiered models", async () => {
+      const result = await executeTool("get_model_details", {
+        model_name: "gpt-4o",
+      });
+
+      const text = result.content[0].text;
+      expect(text).not.toContain("Tiered Pricing");
+    });
+  });
+});
+
+describe("calculateTieredCost", () => {
+  const tieredModel = testModels["claude-opus-4"];
+  const flatModel = testModels["gpt-4o"];
+
+  it("splits cost at threshold when tokens exceed 200K", () => {
+    const result = calculateTieredCost(tieredModel, 300000, 250000);
+
+    expect(result.tieredInput).toBe(true);
+    expect(result.tieredOutput).toBe(true);
+    // Input: 200K × 0.000015 = 3.00, 100K × 0.00003 = 3.00
+    expect(result.inputBaseCost).toBeCloseTo(3.0, 5);
+    expect(result.inputTieredCost).toBeCloseTo(3.0, 5);
+    expect(result.inputCost).toBeCloseTo(6.0, 5);
+    // Output: 200K × 0.000075 = 15.00, 50K × 0.00015 = 7.50
+    expect(result.outputBaseCost).toBeCloseTo(15.0, 5);
+    expect(result.outputTieredCost).toBeCloseTo(7.5, 5);
+    expect(result.outputCost).toBeCloseTo(22.5, 5);
+    expect(result.totalCost).toBeCloseTo(28.5, 5);
+  });
+
+  it("uses flat rate when tokens are at or below threshold", () => {
+    const result = calculateTieredCost(tieredModel, 200000, 100000);
+
+    expect(result.tieredInput).toBe(false);
+    expect(result.tieredOutput).toBe(false);
+    expect(result.inputTieredCost).toBe(0);
+    expect(result.outputTieredCost).toBe(0);
+    expect(result.inputCost).toBeCloseTo(3.0, 5);
+    expect(result.outputCost).toBeCloseTo(7.5, 5);
+  });
+
+  it("uses flat rate for non-tiered model regardless of token count", () => {
+    const result = calculateTieredCost(flatModel, 500000, 500000);
+
+    expect(result.tieredInput).toBe(false);
+    expect(result.tieredOutput).toBe(false);
+    expect(result.inputTieredCost).toBe(0);
+    expect(result.outputTieredCost).toBe(0);
   });
 });

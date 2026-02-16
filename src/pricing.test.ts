@@ -94,6 +94,60 @@ describe("pricing module", () => {
       expect(model.supports_vision).toBe(false);
       expect(model.supports_function_calling).toBe(false);
       expect(model.supports_parallel_function_calling).toBe(false);
+      expect(model.input_cost_per_token_above_200k).toBeNull();
+      expect(model.output_cost_per_token_above_200k).toBeNull();
+      expect(model.input_cost_per_million_above_200k).toBeNull();
+      expect(model.output_cost_per_million_above_200k).toBeNull();
+    });
+
+    it("extracts tiered pricing fields when present", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          "claude-opus-4": {
+            input_cost_per_token: 0.000015,
+            output_cost_per_token: 0.000075,
+            input_cost_per_token_above_200k_tokens: 0.00003,
+            output_cost_per_token_above_200k_tokens: 0.00015,
+            litellm_provider: "anthropic",
+            mode: "chat",
+          },
+        }),
+      });
+
+      const { refreshPrices, getModels } = await loadPricing();
+      await refreshPrices();
+      const models = await getModels();
+      const model = models["claude-opus-4"];
+
+      expect(model.input_cost_per_token_above_200k).toBe(0.00003);
+      expect(model.output_cost_per_token_above_200k).toBe(0.00015);
+      expect(model.input_cost_per_million_above_200k).toBeCloseTo(30.0, 5);
+      expect(model.output_cost_per_million_above_200k).toBeCloseTo(150.0, 5);
+    });
+
+    it("sets tiered fields to null when absent", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          "gpt-4o": {
+            input_cost_per_token: 0.000005,
+            output_cost_per_token: 0.000015,
+            litellm_provider: "openai",
+            mode: "chat",
+          },
+        }),
+      });
+
+      const { refreshPrices, getModels } = await loadPricing();
+      await refreshPrices();
+      const models = await getModels();
+      const model = models["gpt-4o"];
+
+      expect(model.input_cost_per_token_above_200k).toBeNull();
+      expect(model.output_cost_per_token_above_200k).toBeNull();
+      expect(model.input_cost_per_million_above_200k).toBeNull();
+      expect(model.output_cost_per_million_above_200k).toBeNull();
     });
 
     it("computes per-million costs correctly", async () => {

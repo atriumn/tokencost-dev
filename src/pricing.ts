@@ -9,12 +9,18 @@ const SOURCE_URL =
   "https://raw.githubusercontent.com/BerriAI/litellm/main/model_prices_and_context_window.json";
 const TTL_MS = 24 * 60 * 60 * 1000; // 24 hours
 
+export const TIERED_PRICING_THRESHOLD = 200_000;
+
 export interface ModelEntry {
   key: string;
   input_cost_per_token: number;
   output_cost_per_token: number;
   input_cost_per_million: number;
   output_cost_per_million: number;
+  input_cost_per_token_above_200k: number | null;
+  output_cost_per_token_above_200k: number | null;
+  input_cost_per_million_above_200k: number | null;
+  output_cost_per_million_above_200k: number | null;
   max_input_tokens: number | null;
   max_output_tokens: number | null;
   max_tokens: number | null;
@@ -39,12 +45,27 @@ function normalize(
   const inputCost = Number(raw.input_cost_per_token) || 0;
   const outputCost = Number(raw.output_cost_per_token) || 0;
 
+  const tieredInput =
+    typeof raw.input_cost_per_token_above_200k_tokens === "number"
+      ? raw.input_cost_per_token_above_200k_tokens
+      : null;
+  const tieredOutput =
+    typeof raw.output_cost_per_token_above_200k_tokens === "number"
+      ? raw.output_cost_per_token_above_200k_tokens
+      : null;
+
   return {
     key,
     input_cost_per_token: inputCost,
     output_cost_per_token: outputCost,
     input_cost_per_million: inputCost * 1_000_000,
     output_cost_per_million: outputCost * 1_000_000,
+    input_cost_per_token_above_200k: tieredInput,
+    output_cost_per_token_above_200k: tieredOutput,
+    input_cost_per_million_above_200k:
+      tieredInput != null ? tieredInput * 1_000_000 : null,
+    output_cost_per_million_above_200k:
+      tieredOutput != null ? tieredOutput * 1_000_000 : null,
     max_input_tokens:
       typeof raw.max_input_tokens === "number" ? raw.max_input_tokens : null,
     max_output_tokens:

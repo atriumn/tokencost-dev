@@ -36,8 +36,37 @@ Cost Estimate for claude-sonnet-4-5
   Total:  $0.0105
 ```
 
+## Tiered pricing
+
+For models with tiered pricing (e.g. Claude Opus), the estimate automatically splits the cost at the 200K token threshold:
+
+**Request:**
+
+```json
+{
+  "model_name": "claude-opus-4",
+  "input_tokens": 300000,
+  "output_tokens": 50000
+}
+```
+
+**Response:**
+
+```
+Cost Estimate for claude-opus-4
+
+  Input (base):  200K tokens × $15.00/1M = $3.00
+  Input (>200K): 100K tokens × $30.00/1M = $3.00
+  Output: 50K tokens × $75.00/1M = $3.75
+  ─────────────────────────────
+  Total:  $9.75
+```
+
+When token counts are at or below 200K, the standard flat-rate format is used even for tiered models.
+
 ## Notes
 
 - Token counts must be non-negative integers
 - The model name is fuzzy matched, same as `get_model_details`
 - Pricing is based on the per-token rates from the LiteLLM registry
+- Models with tiered pricing automatically split costs at the 200K token boundary
