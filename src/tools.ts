@@ -1,5 +1,10 @@
 import { z } from "zod";
-import { getModels, refreshPrices, type ModelEntry } from "./pricing.js";
+import {
+  getModels,
+  refreshPrices,
+  TIERED_PRICING_THRESHOLD,
+  type ModelEntry,
+} from "./pricing.js";
 import { fuzzyMatch } from "./search.js";
 
 export const tools = [
@@ -110,12 +115,101 @@ function formatTokenCount(n: number | null): string {
   return n.toString();
 }
 
+interface TieredCostResult {
+  inputCost: number;
+  outputCost: number;
+  totalCost: number;
+  tieredInput: boolean;
+  tieredOutput: boolean;
+  inputBaseCost: number;
+  inputTieredCost: number;
+  outputBaseCost: number;
+  outputTieredCost: number;
+}
+
+export function calculateTieredCost(
+  model: ModelEntry,
+  inputTokens: number,
+  outputTokens: number,
+): TieredCostResult {
+  const threshold = TIERED_PRICING_THRESHOLD;
+
+  let inputBaseCost: number;
+  let inputTieredCost = 0;
+  let tieredInput = false;
+
+  if (
+    model.input_cost_per_token_above_200k != null &&
+    inputTokens > threshold
+  ) {
+    tieredInput = true;
+    inputBaseCost = threshold * model.input_cost_per_token;
+    inputTieredCost =
+      (inputTokens - threshold) * model.input_cost_per_token_above_200k;
+  } else {
+    inputBaseCost = inputTokens * model.input_cost_per_token;
+  }
+
+  let outputBaseCost: number;
+  let outputTieredCost = 0;
+  let tieredOutput = false;
+
+  if (
+    model.output_cost_per_token_above_200k != null &&
+    outputTokens > threshold
+  ) {
+    tieredOutput = true;
+    outputBaseCost = threshold * model.output_cost_per_token;
+    outputTieredCost =
+      (outputTokens - threshold) * model.output_cost_per_token_above_200k;
+  } else {
+    outputBaseCost = outputTokens * model.output_cost_per_token;
+  }
+
+  const inputCost = inputBaseCost + inputTieredCost;
+  const outputCost = outputBaseCost + outputTieredCost;
+
+  return {
+    inputCost,
+    outputCost,
+    totalCost: inputCost + outputCost,
+    tieredInput,
+    tieredOutput,
+    inputBaseCost,
+    inputTieredCost,
+    outputBaseCost,
+    outputTieredCost,
+  };
+}
+
 function formatModelDetails(model: ModelEntry): string {
   const capabilities: string[] = [];
   if (model.supports_vision) capabilities.push("vision");
   if (model.supports_function_calling) capabilities.push("function_calling");
   if (model.supports_parallel_function_calling)
     capabilities.push("parallel_function_calling");
+
+  const hasTieredInput = model.input_cost_per_million_above_200k != null;
+  const hasTieredOutput = model.output_cost_per_million_above_200k != null;
+  const hasTiered = hasTieredInput || hasTieredOutput;
+
+  const tieredLines: string[] = [];
+  if (hasTiered) {
+    tieredLines.push(``);
+    tieredLines.push(
+      `Tiered Pricing (above ${formatTokenCount(TIERED_PRICING_THRESHOLD)} tokens, per 1M):`,
+    );
+    if (hasTieredInput) {
+      tieredLines.push(
+        `  Input:  ${formatCost(model.input_cost_per_million_above_200k!)}`,
+      );
+    }
+    if (hasTieredOutput) {
+      tieredLines.push(
+        `  Output: ${formatCost(model.output_cost_per_million_above_200k!)}`,
+      );
+    }
+  }
 
   return [
     `Model: ${model.key}`,
@@ -125,6 +219,7 @@ function formatModelDetails(model: ModelEntry): string {
     `Pricing (per 1M tokens):`,
     `  Input:  ${formatCost(model.input_cost_per_million)}`,
     `  Output: ${formatCost(model.output_cost_per_million)}`,
+    ...tieredLines,
     ``,
     `Context Window:`,
     `  Max Input:  ${formatTokenCount(model.max_input_tokens)}`,
@@ -181,22 +276,47 @@ export async function executeTool(
           };
         }
 
-        const inputCost = input_tokens * model.input_cost_per_token;
-        const outputCost = output_tokens * model.output_cost_per_token;
-        const totalCost = inputCost + outputCost;
+        const result = calculateTieredCost(model, input_tokens, output_tokens);
+        const lines: string[] = [`Cost Estimate for ${model.key}`, ``];
+
+        if (result.tieredInput) {
+          const baseTokens = TIERED_PRICING_THRESHOLD;
+          const tieredTokens = input_tokens - baseTokens;
+          lines.push(
+            `  Input (base):  ${formatTokenCount(baseTokens)} tokens × ${formatCost(model.input_cost_per_million)}/1M = ${formatCost(result.inputBaseCost)}`,
+          );
+          lines.push(
+            `  Input (>200K): ${formatTokenCount(tieredTokens)} tokens × ${formatCost(model.input_cost_per_million_above_200k!)}/1M = ${formatCost(result.inputTieredCost)}`,
+          );
+        } else {
+          lines.push(
+            `  Input:  ${formatTokenCount(input_tokens)} tokens × ${formatCost(model.input_cost_per_million)}/1M = ${formatCost(result.inputCost)}`,
+          );
+        }
+
+        if (result.tieredOutput) {
+          const baseTokens = TIERED_PRICING_THRESHOLD;
+          const tieredTokens = output_tokens - baseTokens;
+          lines.push(
+            `  Output (base):  ${formatTokenCount(baseTokens)} tokens × ${formatCost(model.output_cost_per_million)}/1M = ${formatCost(result.outputBaseCost)}`,
+          );
+          lines.push(
+            `  Output (>200K): ${formatTokenCount(tieredTokens)} tokens × ${formatCost(model.output_cost_per_million_above_200k!)}/1M = ${formatCost(result.outputTieredCost)}`,
+          );
+        } else {
+          lines.push(
+            `  Output: ${formatTokenCount(output_tokens)} tokens × ${formatCost(model.output_cost_per_million)}/1M = ${formatCost(result.outputCost)}`,
+          );
+        }
+
+        lines.push(`  ─────────────────────────────`);
+        lines.push(`  Total:  ${formatCost(result.totalCost)}`);
 
         return {
           content: [
             {
               type: "text",
-              text: [
-                `Cost Estimate for ${model.key}`,
-                ``,
-                `  Input:  ${formatTokenCount(input_tokens)} tokens × ${formatCost(model.input_cost_per_million)}/1M = ${formatCost(inputCost)}`,
-                `  Output: ${formatTokenCount(output_tokens)} tokens × ${formatCost(model.output_cost_per_million)}/1M = ${formatCost(outputCost)}`,
-                `  ─────────────────────────────`,
-                `  Total:  ${formatCost(totalCost)}`,
-              ].join("\n"),
+              text: lines.join("\n"),
             },
           ],
         };
