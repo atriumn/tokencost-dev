@@ -26,6 +26,8 @@ function makeModel(overrides: Partial<ModelEntry> & { key: string }): ModelEntry
     output_cost_per_token_above_200k: null,
     input_cost_per_million_above_200k: null,
     output_cost_per_million_above_200k: null,
+    cache_read_input_token_cost: null,
+    cache_read_input_token_cost_per_million: null,
     max_input_tokens: 200000,
     max_output_tokens: 8192,
     max_tokens: null,
@@ -116,6 +118,21 @@ const testModels: Record<string, ModelEntry> = {
     supports_vision: false,
     supports_function_calling: false,
     supports_parallel_function_calling: false,
+  }),
+  "claude-3-5-sonnet-20241022": makeModel({
+    key: "claude-3-5-sonnet-20241022",
+    litellm_provider: "anthropic",
+    input_cost_per_token: 0.000003,
+    output_cost_per_token: 0.000015,
+    input_cost_per_million: 3.0,
+    output_cost_per_million: 15.0,
+    cache_read_input_token_cost: 0.0000003,
+    cache_read_input_token_cost_per_million: 0.3,
+    max_input_tokens: 200000,
+    max_output_tokens: 8192,
+    supports_vision: true,
+    supports_function_calling: true,
+    supports_parallel_function_calling: true,
   }),
 };
 
@@ -489,6 +506,104 @@ describe("executeTool", () => {
 
       const text = result.content[0].text;
       expect(text).not.toContain("Tiered Pricing");
+    });
+  });
+
+  describe("prompt caching", () => {
+    it("shows cached pricing in get_model_details when available", async () => {
+      const result = await executeTool("get_model_details", {
+        model_name: "claude-3-5-sonnet-20241022",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Prompt Caching:");
+      expect(text).toContain("Cached input:");
+      expect(text).toContain("$0.3000");
+    });
+
+    it("omits cached pricing section when not available", async () => {
+      const result = await executeTool("get_model_details", {
+        model_name: "gpt-4o",
+      });
+
+      const text = result.content[0].text;
+      expect(text).not.toContain("Prompt Caching:");
+    });
+
+    it("calculates blended cost with cached_tokens in calculate_estimate", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "claude-3-5-sonnet-20241022",
+        input_tokens: 1000,
+        output_tokens: 500,
+        cached_tokens: 800,
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Cached input:");
+      // cached: 800 * 0.0000003 = 0.00024
+      // uncached input: 200 * 0.000003 = 0.0006
+      // output: 500 * 0.000015 = 0.0075
+      // total: 0.0000024 + ... wait
+      // cached: 800 tokens × 0.0000003/token = 0.00024
+      // uncached: 200 tokens × 0.000003/token = 0.0006
+      // output: 500 tokens × 0.000015/token = 0.0075
+      // total: 0.00024 + 0.0006 + 0.0075 = 0.00834
+      expect(text).toContain("$0.008340");
+    });
+
+    it("ignores cached_tokens when model does not support caching", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "gpt-4o",
+        input_tokens: 1000,
+        output_tokens: 500,
+        cached_tokens: 800,
+      });
+
+      const text = result.content[0].text;
+      expect(text).not.toContain("Cached input:");
+      // Full 1000 input tokens at standard rate
+      // input: 1000 * 0.000005 = 0.005
+      // output: 500 * 0.000015 = 0.0075
+      // total: 0.0125
+      expect(text).toContain("$0.0125");
+    });
+
+    it("caps cached_tokens at input_tokens", async () => {
+      const result = await executeTool("calculate_estimate", {
+        model_name: "claude-3-5-sonnet-20241022",
+        input_tokens: 500,
+        output_tokens: 200,
+        cached_tokens: 1000,
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("Cached input:");
+      // cached is capped to 500
+      // cached: 500 * 0.0000003 = 0.00015
+      // uncached: 0 * 0.000003 = 0
+      // output: 200 * 0.000015 = 0.003
+      // total: 0.00315
+      expect(text).toContain("$0.003150");
+    });
+
+    it("shows prompt caching indicator in compare_models", async () => {
+      const result = await executeTool("compare_models", {
+        provider: "anthropic",
+      });
+
+      const text = result.content[0].text;
+      expect(text).toContain("claude-3-5-sonnet-20241022");
+      expect(text).toContain("Prompt caching:");
+    });
+
+    it("does not show prompt caching for non-caching models in compare_models", async () => {
+      const result = await executeTool("compare_models", {
+        provider: "openai",
+        mode: "embedding",
+      });
+
+      const text = result.content[0].text;
+      expect(text).not.toContain("Prompt caching:");
     });
   });
 });

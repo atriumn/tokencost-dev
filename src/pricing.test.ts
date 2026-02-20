@@ -98,6 +98,8 @@ describe("pricing module", () => {
       expect(model.output_cost_per_token_above_200k).toBeNull();
       expect(model.input_cost_per_million_above_200k).toBeNull();
       expect(model.output_cost_per_million_above_200k).toBeNull();
+      expect(model.cache_read_input_token_cost).toBeNull();
+      expect(model.cache_read_input_token_cost_per_million).toBeNull();
     });
 
     it("extracts tiered pricing fields when present", async () => {
@@ -148,6 +150,51 @@ describe("pricing module", () => {
       expect(model.output_cost_per_token_above_200k).toBeNull();
       expect(model.input_cost_per_million_above_200k).toBeNull();
       expect(model.output_cost_per_million_above_200k).toBeNull();
+    });
+
+    it("extracts cache_read_input_token_cost when present", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          "claude-3-5-sonnet-20241022": {
+            input_cost_per_token: 0.000003,
+            output_cost_per_token: 0.000015,
+            cache_read_input_token_cost: 0.0000003,
+            litellm_provider: "anthropic",
+            mode: "chat",
+          },
+        }),
+      });
+
+      const { refreshPrices, getModels } = await loadPricing();
+      await refreshPrices();
+      const models = await getModels();
+      const model = models["claude-3-5-sonnet-20241022"];
+
+      expect(model.cache_read_input_token_cost).toBe(0.0000003);
+      expect(model.cache_read_input_token_cost_per_million).toBeCloseTo(0.3, 5);
+    });
+
+    it("sets cache_read_input_token_cost to null when absent", async () => {
+      globalThis.fetch = vi.fn().mockResolvedValue({
+        ok: true,
+        json: async () => ({
+          "gpt-4o-mini": {
+            input_cost_per_token: 0.00000015,
+            output_cost_per_token: 0.0000006,
+            litellm_provider: "openai",
+            mode: "chat",
+          },
+        }),
+      });
+
+      const { refreshPrices, getModels } = await loadPricing();
+      await refreshPrices();
+      const models = await getModels();
+      const model = models["gpt-4o-mini"];
+
+      expect(model.cache_read_input_token_cost).toBeNull();
+      expect(model.cache_read_input_token_cost_per_million).toBeNull();
     });
 
     it("computes per-million costs correctly", async () => {

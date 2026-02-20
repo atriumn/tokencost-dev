@@ -27,7 +27,7 @@ export const tools = [
   {
     name: "calculate_estimate",
     description:
-      "Estimate the cost for a given number of input and output tokens on a specific model.",
+      "Estimate the cost for a given number of input and output tokens on a specific model. Supports optional cached_tokens for prompt caching discounts.",
     inputSchema: {
       type: "object" as const,
       properties: {
@@ -42,6 +42,11 @@ export const tools = [
         output_tokens: {
           type: "number",
           description: "Number of output tokens",
+        },
+        cached_tokens: {
+          type: "number",
+          description:
+            "Number of input tokens served from cache (prompt caching). Must be <= input_tokens. These tokens are billed at the cached rate instead of the standard input rate.",
         },
       },
       required: ["model_name", "input_tokens", "output_tokens"],
@@ -93,6 +98,7 @@ const calculateEstimateSchema = z.object({
   model_name: z.string().min(1),
   input_tokens: z.number().nonnegative(),
   output_tokens: z.number().nonnegative(),
+  cached_tokens: z.number().nonnegative().optional(),
 });
 
 const compareModelsSchema = z.object({
@@ -211,6 +217,15 @@ function formatModelDetails(model: ModelEntry): string {
     }
   }
 
+  const cachingLines: string[] = [];
+  if (model.cache_read_input_token_cost_per_million != null) {
+    cachingLines.push(``);
+    cachingLines.push(`Prompt Caching:`);
+    cachingLines.push(
+      `  Cached input: ${formatCost(model.cache_read_input_token_cost_per_million)} / 1M tokens`,
+    );
+  }
+
   return [
     `Model: ${model.key}`,
     `Provider: ${model.litellm_provider}`,
@@ -220,6 +235,7 @@ function formatModelDetails(model: ModelEntry): string {
     `  Input:  ${formatCost(model.input_cost_per_million)}`,
     `  Output: ${formatCost(model.output_cost_per_million)}`,
     ...tieredLines,
+    ...cachingLines,
     ``,
     `Context Window:`,
     `  Max Input:  ${formatTokenCount(model.max_input_tokens)}`,
@@ -260,7 +276,7 @@ export async function executeTool(
       }
 
       case "calculate_estimate": {
-        const { model_name, input_tokens, output_tokens } =
+        const { model_name, input_tokens, output_tokens, cached_tokens } =
           calculateEstimateSchema.parse(args);
         const models = await getModels();
         const model = fuzzyMatch(model_name, models);
@@ -276,12 +292,33 @@ export async function executeTool(
           };
         }
 
-        const result = calculateTieredCost(model, input_tokens, output_tokens);
+        // Resolve cached token count: cap at input_tokens, ignore if model doesn't support caching
+        const resolvedCachedTokens =
+          cached_tokens != null &&
+          model.cache_read_input_token_cost != null &&
+          cached_tokens > 0
+            ? Math.min(cached_tokens, input_tokens)
+            : 0;
+        const uncachedInputTokens = input_tokens - resolvedCachedTokens;
+
+        const result = calculateTieredCost(model, uncachedInputTokens, output_tokens);
+        const cachedCost =
+          resolvedCachedTokens > 0
+            ? resolvedCachedTokens * model.cache_read_input_token_cost!
+            : 0;
+        const totalCost = result.totalCost + cachedCost;
+
         const lines: string[] = [`Cost Estimate for ${model.key}`, ``];
+
+        if (resolvedCachedTokens > 0) {
+          lines.push(
+            `  Cached input:   ${formatTokenCount(resolvedCachedTokens)} tokens × ${formatCost(model.cache_read_input_token_cost_per_million!)}/1M = ${formatCost(cachedCost)}`,
+          );
+        }
 
         if (result.tieredInput) {
           const baseTokens = TIERED_PRICING_THRESHOLD;
-          const tieredTokens = input_tokens - baseTokens;
+          const tieredTokens = uncachedInputTokens - baseTokens;
           lines.push(
             `  Input (base):  ${formatTokenCount(baseTokens)} tokens × ${formatCost(model.input_cost_per_million)}/1M = ${formatCost(result.inputBaseCost)}`,
           );
@@ -290,7 +327,7 @@ export async function executeTool(
           );
         } else {
           lines.push(
-            `  Input:  ${formatTokenCount(input_tokens)} tokens × ${formatCost(model.input_cost_per_million)}/1M = ${formatCost(result.inputCost)}`,
+            `  Input:  ${formatTokenCount(uncachedInputTokens)} tokens × ${formatCost(model.input_cost_per_million)}/1M = ${formatCost(result.inputCost)}`,
           );
         }
 
@@ -310,7 +347,7 @@ export async function executeTool(
         }
 
         lines.push(`  ─────────────────────────────`);
-        lines.push(`  Total:  ${formatCost(result.totalCost)}`);
+        lines.push(`  Total:  ${formatCost(totalCost)}`);
 
         return {
           content: [
@@ -377,7 +414,10 @@ export async function executeTool(
             `${i + 1}. ${m.key}\n` +
             `   Provider: ${m.litellm_provider} | Mode: ${m.mode}\n` +
             `   Input: ${formatCost(m.input_cost_per_million)}/1M | Output: ${formatCost(m.output_cost_per_million)}/1M\n` +
-            `   Context: ${formatTokenCount(m.max_input_tokens)} in / ${formatTokenCount(m.max_output_tokens)} out`,
+            `   Context: ${formatTokenCount(m.max_input_tokens)} in / ${formatTokenCount(m.max_output_tokens)} out` +
+            (m.cache_read_input_token_cost_per_million != null
+              ? `\n   Prompt caching: ${formatCost(m.cache_read_input_token_cost_per_million)}/1M cached input`
+              : ""),
         );
 
         const total = `\n(${filtered.length} models matched total)`;
