@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { fuzzyMatch, fuzzyMatchMultiple } from "./search.js";
+import { fuzzyMatch, fuzzyMatchMultiple, fuzzyMatchWithMetadata } from "./search.js";
 import type { ModelEntry } from "./pricing.js";
 
 /** Helper to build a minimal ModelEntry for testing */
@@ -235,5 +235,58 @@ describe("fuzzyMatchMultiple", () => {
     const keys = results.map((r) => r.key);
     expect(keys).toContain("claude-sonnet-4-5");
     expect(keys).toContain("claude-opus-4");
+  });
+});
+
+describe("fine-tuned model patterns (ft: prefix)", () => {
+  it("extracts base model from OpenAI fine-tuned pattern", () => {
+    const result = fuzzyMatch("ft:gpt-4o:my-org:custom_suffix:id", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gpt-4o");
+  });
+
+  it("extracts base model from fine-tuned gpt-4o-mini", () => {
+    const result = fuzzyMatch("ft:gpt-4o-mini:my-org:suffix:abc123", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gpt-4o-mini");
+  });
+
+  it("returns metadata indicating fine-tuned status", () => {
+    const result = fuzzyMatchWithMetadata("ft:gpt-4o:my-org:custom:id", sampleModels);
+    expect(result.entry).not.toBeNull();
+    expect(result.entry!.key).toBe("gpt-4o");
+    expect(result.isFineTuned).toBe(true);
+  });
+
+  it("returns metadata with isFineTuned=false for non-fine-tuned models", () => {
+    const result = fuzzyMatchWithMetadata("gpt-4o", sampleModels);
+    expect(result.entry).not.toBeNull();
+    expect(result.entry!.key).toBe("gpt-4o");
+    expect(result.isFineTuned).toBe(false);
+  });
+
+  it("handles fine-tuned pattern with provider prefix", () => {
+    // ft: should be processed before provider prefix
+    const result = fuzzyMatch("azure/ft:gpt-4o:my-org:custom:id", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gpt-4o");
+  });
+
+  it("handles case-insensitive fine-tuned pattern", () => {
+    const result = fuzzyMatch("FT:GPT-4O:MY-ORG:CUSTOM:ID", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gpt-4o");
+  });
+
+  it("fuzzyMatchMultiple handles fine-tuned patterns", () => {
+    const results = fuzzyMatchMultiple("ft:gpt:my-org:suffix:id", sampleModels);
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    const keys = results.map((r) => r.key);
+    expect(keys.some((k) => k.includes("gpt"))).toBe(true);
+  });
+
+  it("returns null for invalid fine-tuned pattern with missing base model", () => {
+    const result = fuzzyMatch("ft:nonexistent-model:org:suffix:id", sampleModels);
+    expect(result).toBeNull();
   });
 });
