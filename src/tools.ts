@@ -5,7 +5,7 @@ import {
   TIERED_PRICING_THRESHOLD,
   type ModelEntry,
 } from "./pricing.js";
-import { fuzzyMatch } from "./search.js";
+import { fuzzyMatch, fuzzyMatchWithMetadata } from "./search.js";
 
 export const tools = [
   {
@@ -257,7 +257,7 @@ export async function executeTool(
       case "get_model_details": {
         const { model_name } = getModelDetailsSchema.parse(args);
         const models = await getModels();
-        const model = fuzzyMatch(model_name, models);
+        const { entry: model, isFineTuned } = fuzzyMatchWithMetadata(model_name, models);
 
         if (!model) {
           return {
@@ -270,8 +270,13 @@ export async function executeTool(
           };
         }
 
+        const details = formatModelDetails(model);
+        const note = isFineTuned
+          ? `\n⚠️ Note: This is pricing for the base model (${model.key}). Fine-tuned models use the same pricing as their base model.`
+          : "";
+
         return {
-          content: [{ type: "text", text: formatModelDetails(model) }],
+          content: [{ type: "text", text: details + note }],
         };
       }
 
@@ -279,7 +284,7 @@ export async function executeTool(
         const { model_name, input_tokens, output_tokens, cached_tokens } =
           calculateEstimateSchema.parse(args);
         const models = await getModels();
-        const model = fuzzyMatch(model_name, models);
+        const { entry: model, isFineTuned } = fuzzyMatchWithMetadata(model_name, models);
 
         if (!model) {
           return {
@@ -309,6 +314,13 @@ export async function executeTool(
         const totalCost = result.totalCost + cachedCost;
 
         const lines: string[] = [`Cost Estimate for ${model.key}`, ``];
+
+        if (isFineTuned) {
+          lines.push(
+            `⚠️ Note: This estimate is for the base model (${model.key}). Fine-tuned models use the same pricing as their base model.`,
+          );
+          lines.push(``);
+        }
 
         if (resolvedCachedTokens > 0) {
           lines.push(
