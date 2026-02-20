@@ -1,11 +1,11 @@
 {
-  "name": "@atriumn/tariff",
+  "name": "tokencost-dev",
   "version": "0.1.0",
   "description": "LLM Pricing Oracle — MCP server exposing real model pricing data from LiteLLM",
   "type": "module",
   "main": "dist/index.js",
   "bin": {
-    "tariff": "dist/index.js"
+    "tokencost-dev": "dist/index.js"
   },
   "files": [
     "dist/**/*.js",
@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/atriumn/tariff.git"
+    "url": "https://github.com/atriumn/tokencost-dev.git"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",

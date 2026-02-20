@@ -1,9 +1,9 @@
 ---
 title: Getting Started
-description: Install and configure the Tariff MCP server in Claude Code, Cursor, or any MCP client.
+description: Install and configure the tokencost MCP server in Claude Code, Cursor, or any MCP client.
 ---
 
-Tariff (`@atriumn/tariff`) is an MCP server that provides real-time LLM pricing data. It runs as a local process and communicates over stdio.
+tokencost (`tokencost-dev`) is an MCP server that provides real-time LLM pricing data. It runs as a local process and communicates over stdio.
 
 ## Prerequisites
 
@@ -16,7 +16,7 @@ That's it. No API keys, no accounts, no configuration files.
 The fastest way to get started:
 
 ```bash
-claude mcp add tariff -- npx -y @atriumn/tariff
+claude mcp add tokencost-dev -- npx -y tokencost-dev
 ```
 
 This registers the MCP server and it will be available in all future Claude Code sessions.
@@ -28,9 +28,9 @@ Add to your Cursor MCP config (`.cursor/mcp.json`):
 ```json
 {
   "mcpServers": {
-    "tariff": {
+    "tokencost-dev": {
       "command": "npx",
-      "args": ["-y", "@atriumn/tariff"]
+      "args": ["-y", "tokencost-dev"]
     }
   }
 }
@@ -43,9 +43,9 @@ For other MCP clients, the server config is:
 ```json
 {
   "mcpServers": {
-    "tariff": {
+    "tokencost-dev": {
       "command": "npx",
-      "args": ["-y", "@atriumn/tariff"]
+      "args": ["-y", "tokencost-dev"]
     }
   }
 }

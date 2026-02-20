@@ -1,4 +1,4 @@
-# Tariff — LLM Pricing Oracle MCP Server
+# tokencost — LLM Pricing Oracle MCP Server
 
 ## Overview
 Lightweight MCP server that pulls real LLM pricing data from LiteLLM's community-maintained registry and exposes it as tools any MCP-compatible client can query.

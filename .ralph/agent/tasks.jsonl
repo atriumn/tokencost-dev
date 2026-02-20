@@ -1,0 +1,3 @@
+{"id":"task-1771614219-b414","title":"Update root package.json name and bin","status":"closed","priority":1,"blocked_by":[],"loop_id":"primary-20260220-190309","created":"2026-02-20T19:03:39.439318236+00:00","closed":"2026-02-20T19:05:38.780559385+00:00"}
+{"id":"task-1771614220-b1a7","title":"Update docs package.json and astro config","status":"closed","priority":1,"blocked_by":[],"loop_id":"primary-20260220-190309","created":"2026-02-20T19:03:40.242088530+00:00","closed":"2026-02-20T19:05:38.887414772+00:00"}
+{"id":"task-1771614221-5e9a","title":"Update CLAUDE.md and README.md","status":"closed","priority":1,"blocked_by":[],"loop_id":"primary-20260220-190309","created":"2026-02-20T19:03:41.024222729+00:00","closed":"2026-02-20T19:05:38.990203457+00:00"}

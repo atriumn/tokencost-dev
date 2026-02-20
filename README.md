@@ -1,4 +1,4 @@
-# Tariff
+# tokencost
 
 LLM Pricing Oracle — an MCP server that pulls real pricing data from the [LiteLLM community registry](https://github.com/BerriAI/litellm) and exposes it as tools any MCP client can query.
 
@@ -9,7 +9,7 @@ No API keys. No accounts. No configuration files.
 **Claude Code:**
 
 ```bash
-claude mcp add tariff -- npx -y @atriumn/tariff
+claude mcp add tokencost-dev -- npx -y tokencost-dev
 ```
 
 **Cursor** (`.cursor/mcp.json`):
@@ -17,9 +17,9 @@ claude mcp add tariff -- npx -y @atriumn/tariff
 ```json
 {
   "mcpServers": {
-    "tariff": {
+    "tokencost-dev": {
       "command": "npx",
-      "args": ["-y", "@atriumn/tariff"]
+      "args": ["-y", "tokencost-dev"]
     }
   }
 }

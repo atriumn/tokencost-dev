@@ -11,7 +11,7 @@ import { getModels } from "./pricing.js";
 
 const server = new Server(
   {
-    name: "tariff",
+    name: "tokencost-dev",
     version: "0.1.0",
   },
   {
@@ -38,7 +38,7 @@ async function main() {
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
-  console.error("Tariff MCP server started");
+  console.error("tokencost MCP server started");
 }
 
 main().catch((error) => {

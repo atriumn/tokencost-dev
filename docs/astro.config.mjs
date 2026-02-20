@@ -5,10 +5,10 @@ export default defineConfig({
   site: 'https://tokencost.dev',
   integrations: [
     starlight({
-      title: 'Tariff MCP',
+      title: 'tokencost',
       logo: {
         src: './src/assets/tokencost-logo.png',
-        alt: 'Tariff MCP',
+        alt: 'tokencost',
       },
       customCss: ['./src/styles/custom.css'],
       favicon: '/favicon.ico',
@@ -21,7 +21,7 @@ export default defineConfig({
         {
           icon: 'github',
           label: 'GitHub',
-          href: 'https://github.com/atriumn/tariff',
+          href: 'https://github.com/atriumn/tokencost-dev',
         },
       ],
       sidebar: [
