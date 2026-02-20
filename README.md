@@ -1,4 +1,7 @@
-# tokencost
+<p align="center">
+  <img src="docs/src/assets/tokencost-logo.png" width="120" />
+</p>
+<h1 align="center">tokencost</h1>
 
 LLM Pricing Oracle — an MCP server that pulls real pricing data from the [LiteLLM community registry](https://github.com/BerriAI/litellm) and exposes it as tools any MCP client can query.
 
