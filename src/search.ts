@@ -5,13 +5,14 @@ let fuse: Fuse<{ key: string }> | null = null;
 let lastKeys: string[] = [];
 
 const KNOWN_PREFIXES = [
-  "azure/",
-  "bedrock/",
-  "vertex_ai/",
+  // Longer prefixes must come first to avoid partial matches
   "vertex_ai_beta/",
-  "openrouter/",
+  "vertex_ai/",
   "together_ai/",
   "fireworks_ai/",
+  "openrouter/",
+  "bedrock/",
+  "azure/",
 ];
 
 /**
