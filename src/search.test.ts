@@ -73,6 +73,54 @@ const sampleModels: Record<string, ModelEntry> = {
 };
 
 describe("fuzzyMatch", () => {
+  it("strips azure/ prefix before matching", () => {
+    const result = fuzzyMatch("azure/gpt-4o", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gpt-4o");
+  });
+
+  it("strips bedrock/ prefix before matching", () => {
+    const result = fuzzyMatch("bedrock/gpt-4o", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gpt-4o");
+  });
+
+  it("strips vertex_ai/ prefix before matching", () => {
+    const result = fuzzyMatch("vertex_ai/gemini-2.0-flash", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gemini-2.0-flash");
+  });
+
+  it("strips vertex_ai_beta/ prefix before matching", () => {
+    const result = fuzzyMatch("vertex_ai_beta/claude-sonnet-4-5", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("claude-sonnet-4-5");
+  });
+
+  it("strips openrouter/ prefix before matching", () => {
+    const result = fuzzyMatch("openrouter/gpt-4o-mini", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gpt-4o-mini");
+  });
+
+  it("strips together_ai/ prefix before matching", () => {
+    const result = fuzzyMatch("together_ai/claude-opus-4", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("claude-opus-4");
+  });
+
+  it("strips fireworks_ai/ prefix before matching", () => {
+    const result = fuzzyMatch("fireworks_ai/gpt-4o", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gpt-4o");
+  });
+
+  it("strips prefix with case-insensitive matching", () => {
+    const result = fuzzyMatch("AZURE/GPT-4O", sampleModels);
+    expect(result).not.toBeNull();
+    expect(result!.key).toBe("gpt-4o");
+  });
+
   it("returns exact match when key matches exactly", () => {
     const result = fuzzyMatch("gpt-4o", sampleModels);
     expect(result).not.toBeNull();
@@ -134,6 +182,20 @@ describe("fuzzyMatch", () => {
 });
 
 describe("fuzzyMatchMultiple", () => {
+  it("strips openrouter/ prefix before matching", () => {
+    const results = fuzzyMatchMultiple("openrouter/claude", sampleModels);
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    const keys = results.map((r) => r.key);
+    expect(keys.some((k) => k.includes("claude"))).toBe(true);
+  });
+
+  it("strips azure/ prefix before matching multiple", () => {
+    const results = fuzzyMatchMultiple("azure/gpt", sampleModels);
+    expect(results.length).toBeGreaterThanOrEqual(1);
+    const keys = results.map((r) => r.key);
+    expect(keys.some((k) => k.includes("gpt"))).toBe(true);
+  });
+
   it("returns up to the default limit of 5 results", () => {
     const results = fuzzyMatchMultiple("claude", sampleModels);
     // We have 2 claude models, so should return at most 2 for "claude"
