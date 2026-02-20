@@ -15,6 +15,26 @@ const KNOWN_PREFIXES = [
   "azure/",
 ];
 
+export interface SearchResult {
+  entry: ModelEntry | null;
+  isFineTuned?: boolean;
+}
+
+/**
+ * Extract base model from OpenAI fine-tuned model pattern.
+ * e.g., "ft:gpt-4o:my-org:custom_suffix:id" -> "gpt-4o"
+ * Returns the original string if not a fine-tuned pattern.
+ */
+function extractFineTunedBase(query: string): { base: string; isFineTuned: boolean } {
+  if (query.toLowerCase().startsWith("ft:")) {
+    const parts = query.split(":");
+    if (parts.length >= 2) {
+      return { base: parts[1], isFineTuned: true };
+    }
+  }
+  return { base: query, isFineTuned: false };
+}
+
 /**
  * Strip known provider prefixes from a query string.
  * e.g., "azure/gpt-4o" -> "gpt-4o", "bedrock/anthropic.claude-3" -> "anthropic.claude-3"
@@ -52,8 +72,10 @@ export function fuzzyMatch(
   query: string,
   models: Record<string, ModelEntry>,
 ): ModelEntry | null {
-  // Strip provider prefix before matching
-  const normalizedQuery = stripProviderPrefix(query);
+  // Strip provider prefix first, then handle fine-tuned pattern
+  const withoutProvider = stripProviderPrefix(query);
+  const { base, isFineTuned } = extractFineTunedBase(withoutProvider);
+  const normalizedQuery = base;
 
   // Try exact match first
   if (models[normalizedQuery]) {
@@ -79,13 +101,25 @@ export function fuzzyMatch(
   return null;
 }
 
+export function fuzzyMatchWithMetadata(
+  query: string,
+  models: Record<string, ModelEntry>,
+): SearchResult {
+  const withoutProvider = stripProviderPrefix(query);
+  const { base, isFineTuned } = extractFineTunedBase(withoutProvider);
+  const entry = fuzzyMatch(query, models);
+  return { entry, isFineTuned };
+}
+
 export function fuzzyMatchMultiple(
   query: string,
   models: Record<string, ModelEntry>,
   limit = 5,
 ): ModelEntry[] {
-  // Strip provider prefix before matching
-  const normalizedQuery = stripProviderPrefix(query);
+  // Strip provider prefix first, then handle fine-tuned pattern
+  const withoutProvider = stripProviderPrefix(query);
+  const { base } = extractFineTunedBase(withoutProvider);
+  const normalizedQuery = base;
 
   const index = buildIndex(models);
   const results = index.search(normalizedQuery, { limit });
