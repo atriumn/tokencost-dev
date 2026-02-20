@@ -1,25 +1,20 @@
 Implement this issue fully per the requirements.
 
-## Issue #10: Rename package from @atriumn/tariff to tokencost-dev
+## Issue #11: Support cached/prompt caching token pricing
 
 ## Summary
-Rename the package to align with our domain (tokencost.dev) and eliminate brand confusion.
+LiteLLM data includes a `cache_read_input_token_cost` field for models that support prompt caching (e.g. GPT-4o, Claude 3.5 Sonnet). We should surface this in our tools.
 
-## Changes required
-- `package.json`: name (`tokencost-dev`), bin command, description
-- `CLAUDE.md`: all references to tariff
-- `README.md`: install instructions, package name references
-- `docs/`: astro config site name, content references
-- GitHub repo name: atriumn/tariff → atriumn/tokencost-dev
-- CI workflow if it references the package name
-- npm: publish under new name, deprecate old `@atriumn/tariff` if published
+## Changes
+- **pricing.ts**: Read and normalize `cache_read_input_token_cost` from LiteLLM data
+- **get_model_details**: Show cached token pricing when available (e.g. "Cached input: $X.XX / 1M tokens")
+- **calculate_estimate**: Add optional `cached_tokens` parameter to calculate blended cost with cached vs uncached input tokens
+- **compare_models**: Indicate which models support prompt caching
 
-## Notes
-- This should land before any GTM work (publish, directory listings, README improvements) since they all depend on the final name
-- CLI command becomes `tokencost-dev` (i.e. `npx tokencost-dev`)
-- MCP tool names (`get_model_details`, etc.) stay as-is — they're generic and don't need renaming
+## Context
+Prompt caching is increasingly common across providers. AgentOps/tokencost already supports this field. Users making cost decisions should see the caching discount.
 
-Implement all requirements from the above issue(s). Reference: #10
+Implement all requirements from the above issue(s). Reference: #11
 
 
 **MANDATORY BEFORE OUTPUTTING LOOP_COMPLETE:**
@@ -32,7 +27,7 @@ Implement all requirements from the above issue(s). Reference: #10
 4. Run typecheck: `pnpm --filter web exec tsc --noEmit` — must pass
 5. Run `git status` — working tree must be clean (all changes committed)
 6. Run `git log --oneline -5` — must show commits YOU authored on this branch
-7. Run `/home/jeff/projects/alloy/shared/scripts/ralph-review.sh --worktree /home/jeff/projects/worktrees/tariff-10 --issue 10 --project tariff`
+7. Run `/home/jeff/projects/alloy/shared/scripts/ralph-review.sh --worktree /home/jeff/projects/worktrees/tariff-11 --issue 11 --project tariff`
    - If it prints PASS — you are clear to output LOOP_COMPLETE
    - If it prints BLOCKING — fix every listed issue, re-commit, then re-run the review
    - If it prints ERROR — ignore and proceed (review service unavailable)

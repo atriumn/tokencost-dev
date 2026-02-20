@@ -13,6 +13,8 @@ function makeModel(overrides: Partial<ModelEntry> & { key: string }): ModelEntry
     output_cost_per_token_above_200k: null,
     input_cost_per_million_above_200k: null,
     output_cost_per_million_above_200k: null,
+    cache_read_input_token_cost: null,
+    cache_read_input_token_cost_per_million: null,
     max_input_tokens: 200000,
     max_output_tokens: 8192,
     max_tokens: null,

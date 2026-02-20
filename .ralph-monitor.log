@@ -13,3 +13,6 @@
 [2026-02-20T19:03:09+00:00] Monitor started for tariff-10 (project=tariff issue=10 model=claude-haiku-4-5)
 [2026-02-20T19:03:09+00:00] Watching: /home/jeff/projects/worktrees/tariff-10/.ralph
 [2026-02-20T19:03:09+00:00] Ralph directory found, entering monitoring loop
+[2026-02-20T19:13:32+00:00] Monitor started for tariff-11 (project=tariff issue=11 model=claude-sonnet-4-6)
+[2026-02-20T19:13:32+00:00] Watching: /home/jeff/projects/worktrees/tariff-11/.ralph
+[2026-02-20T19:13:32+00:00] Ralph directory found, entering monitoring loop

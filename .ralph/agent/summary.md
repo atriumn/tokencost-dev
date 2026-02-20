@@ -2,24 +2,11 @@
 
 **Status:** Completed successfully
 **Iterations:** 1
-**Duration:** 3m 30s
+**Duration:** 4m 2s
 
 ## Tasks
 
-- [x] name: `@atriumn/tariff` → `tokencost-dev`
-- [x] bin: `tariff` → `tokencost-dev`
-- [x] repository.url: `github.com/atriumn/tariff.git` → `github.com/atriumn/tokencost-dev.git`
-- [x] name: `@atriumn/tariff-docs` → `@atriumn/tokencost-dev-docs`
-- [x] Title: "Tariff" → "tokencost"
-- [x] Title and install instructions updated
-- [x] Package name from `@atriumn/tariff` → `tokencost-dev`
-- [x] title: "Tariff MCP" → "tokencost"
-- [x] github href: `github.com/atriumn/tariff` → `github.com/atriumn/tokencost-dev`
-- [x] logo alt text updated
-- [x] All references to @atriumn/tariff updated to tokencost-dev
-- [x] Installation instructions updated
-- [x] server name: "tariff" → "tokencost-dev"
-- [x] console message updated
+_No scratchpad found._
 
 ## Events
 
@@ -27,4 +14,4 @@ _No events recorded._
 
 ## Final Commit
 
-1c5a04f: Rename package from @atriumn/tariff to tokencost-dev
+9d9211f: feat: support cached/prompt caching token pricing (#11)

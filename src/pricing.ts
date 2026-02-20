@@ -21,6 +21,8 @@ export interface ModelEntry {
   output_cost_per_token_above_200k: number | null;
   input_cost_per_million_above_200k: number | null;
   output_cost_per_million_above_200k: number | null;
+  cache_read_input_token_cost: number | null;
+  cache_read_input_token_cost_per_million: number | null;
   max_input_tokens: number | null;
   max_output_tokens: number | null;
   max_tokens: number | null;
@@ -54,6 +56,11 @@ function normalize(
       ? raw.output_cost_per_token_above_200k_tokens
       : null;
 
+  const cacheReadCost =
+    typeof raw.cache_read_input_token_cost === "number"
+      ? raw.cache_read_input_token_cost
+      : null;
+
   return {
     key,
     input_cost_per_token: inputCost,
@@ -66,6 +73,9 @@ function normalize(
       tieredInput != null ? tieredInput * 1_000_000 : null,
     output_cost_per_million_above_200k:
       tieredOutput != null ? tieredOutput * 1_000_000 : null,
+    cache_read_input_token_cost: cacheReadCost,
+    cache_read_input_token_cost_per_million:
+      cacheReadCost != null ? cacheReadCost * 1_000_000 : null,
     max_input_tokens:
       typeof raw.max_input_tokens === "number" ? raw.max_input_tokens : null,
     max_output_tokens:
