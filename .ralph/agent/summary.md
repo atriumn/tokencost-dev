@@ -2,11 +2,16 @@
 
 **Status:** Completed successfully
 **Iterations:** 1
-**Duration:** 4m 2s
+**Duration:** 4m 18s
 
 ## Tasks
 
-_No scratchpad found._
+- [x] Implement stripProviderPrefix in search.ts
+- [x] Add tests to search.test.ts
+- [x] Run tests and verify (ALL 84 TESTS PASS including 10 new prefix tests)
+- [x] Commit changes (2 commits)
+- [x] Verify build passes
+- [x] Final review passed (PASS)
 
 ## Events
 
@@ -14,4 +19,4 @@ _No events recorded._
 
 ## Final Commit
 
-9d9211f: feat: support cached/prompt caching token pricing (#11)
+488e33e: fix: order KNOWN_PREFIXES by length to avoid partial matches

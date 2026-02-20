@@ -1,20 +1,20 @@
 Implement this issue fully per the requirements.
 
-## Issue #11: Support cached/prompt caching token pricing
+## Issue #12: Normalize provider prefixes in fuzzy matching
 
 ## Summary
-LiteLLM data includes a `cache_read_input_token_cost` field for models that support prompt caching (e.g. GPT-4o, Claude 3.5 Sonnet). We should surface this in our tools.
+Users often reference models with provider prefixes like `azure/gpt-4o`, `bedrock/anthropic.claude-3`, `vertex_ai/gemini-pro`, `openrouter/anthropic/claude-3`. Our fuzzy matching should strip these prefixes before attempting a match.
 
 ## Changes
-- **pricing.ts**: Read and normalize `cache_read_input_token_cost` from LiteLLM data
-- **get_model_details**: Show cached token pricing when available (e.g. "Cached input: $X.XX / 1M tokens")
-- **calculate_estimate**: Add optional `cached_tokens` parameter to calculate blended cost with cached vs uncached input tokens
-- **compare_models**: Indicate which models support prompt caching
+- **search.ts**: Add prefix stripping logic before fuzzy match
+- Handle known prefixes: `azure/`, `bedrock/`, `vertex_ai/`, `vertex_ai_beta/`, `openrouter/`, `together_ai/`, `fireworks_ai/`
+- Should work in both `get_model_details` and `calculate_estimate`
+- Add tests for prefix-stripped matching
 
 ## Context
-Prompt caching is increasingly common across providers. AgentOps/tokencost already supports this field. Users making cost decisions should see the caching discount.
+AgentOps/tokencost handles this via provider prefix normalization. Users copying model names from their API configs shouldn't have to manually strip these.
 
-Implement all requirements from the above issue(s). Reference: #11
+Implement all requirements from the above issue(s). Reference: #12
 
 
 **MANDATORY BEFORE OUTPUTTING LOOP_COMPLETE:**
@@ -27,7 +27,7 @@ Implement all requirements from the above issue(s). Reference: #11
 4. Run typecheck: `pnpm --filter web exec tsc --noEmit` — must pass
 5. Run `git status` — working tree must be clean (all changes committed)
 6. Run `git log --oneline -5` — must show commits YOU authored on this branch
-7. Run `/home/jeff/projects/alloy/shared/scripts/ralph-review.sh --worktree /home/jeff/projects/worktrees/tariff-11 --issue 11 --project tariff`
+7. Run `/home/jeff/projects/alloy/shared/scripts/ralph-review.sh --worktree /home/jeff/projects/worktrees/tariff-12 --issue 12 --project tariff`
    - If it prints PASS — you are clear to output LOOP_COMPLETE
    - If it prints BLOCKING — fix every listed issue, re-commit, then re-run the review
    - If it prints ERROR — ignore and proceed (review service unavailable)

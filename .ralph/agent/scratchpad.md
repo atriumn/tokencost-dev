@@ -1,30 +1,44 @@
-# Scratchpad — Issue #11: Support cached/prompt caching token pricing
+# Issue #12: Normalize provider prefixes in fuzzy matching
 
 ## Objective
-Implement prompt caching token pricing support across all tools.
+Strip known provider prefixes from model names before fuzzy matching so users can pass model names like `azure/gpt-4o`, `bedrock/anthropic.claude-3`, etc., and they'll still match correctly.
 
-## Status: COMPLETE
+## Implementation Plan
 
-## Changes Made
+### 1. Update search.ts
+- Add `stripProviderPrefix()` function that removes known prefixes:
+  - `azure/`, `bedrock/`, `vertex_ai/`, `vertex_ai_beta/`, `openrouter/`, `together_ai/`, `fireworks_ai/`
+- Call this in both `fuzzyMatch()` and `fuzzyMatchMultiple()` before matching
 
-### pricing.ts
-- Added `cache_read_input_token_cost: number | null` to `ModelEntry` interface
-- Added `cache_read_input_token_cost_per_million: number | null` to `ModelEntry` interface
-- Normalized `cache_read_input_token_cost` from LiteLLM raw data in `normalize()`
-- Computed `cache_read_input_token_cost_per_million = cost * 1_000_000`
+### 2. Add tests to search.test.ts
+- Test cases for each prefix being stripped correctly
+- Test that matching still works after prefix stripping
 
-### tools.ts
-- `formatModelDetails`: Shows "Prompt Caching:" section with "Cached input: $X.XX / 1M tokens" when available
-- `calculate_estimate` tool schema: Added optional `cached_tokens` parameter
-- `calculateEstimateSchema`: Added `cached_tokens: z.number().nonnegative().optional()`
-- `calculate_estimate` handler: Calculates blended cost (cached × cache_rate + uncached × input_rate), shows "Cached input:" line
-- `compare_models`: Appends "Prompt caching: $X.XX/1M cached input" line for supporting models
+### 3. Verify through tools.ts
+- `get_model_details` and `calculate_estimate` both use `fuzzyMatch()`, so they'll automatically benefit from the change
 
-### Tests
-- `search.test.ts`: Added new fields to `makeModel()` helper
-- `tools.test.ts`: Added new fields to `makeModel()` helper, added `claude-3-5-sonnet-20241022` test model with caching, added 6 new prompt caching tests
-- `pricing.test.ts`: Added 2 tests for cache_read_input_token_cost extraction, updated missing-fields test to check null defaults
+## Progress
+- [x] Implement stripProviderPrefix in search.ts
+- [x] Add tests to search.test.ts
+- [x] Run tests and verify (ALL 84 TESTS PASS including 10 new prefix tests)
+- [x] Commit changes (2 commits)
+- [x] Verify build passes
+- [x] Final review passed (PASS)
 
-## Verification
-- Build: PASS
-- Tests: 74/74 PASS
+## Implementation Summary
+
+### Changes Made:
+1. Added `stripProviderPrefix()` function to handle 7 known provider prefixes
+2. Integrated prefix stripping in `fuzzyMatch()` - affects both `get_model_details` and `calculate_estimate`
+3. Integrated prefix stripping in `fuzzyMatchMultiple()`
+4. Added 10 comprehensive tests covering all prefixes and case-insensitivity
+5. Fixed prefix ordering to handle overlapping prefixes (vertex_ai/vertex_ai_beta)
+
+### Commits:
+- `2593254` - feat: normalize provider prefixes in fuzzy matching
+- `488e33e` - fix: order KNOWN_PREFIXES by length to avoid partial matches
+
+### Verification:
+- ✓ 84 tests pass (including 10 new tests)
+- ✓ Build passes
+- ✓ Review passed (all blocking issues resolved)
