@@ -13,7 +13,7 @@
 ---
 
 <p align="center">
-  <img src="docs/src/assets/demo.gif" alt="tokencost demo in Claude Code" width="700" />
+  <img src="tokencost-dev.gif" alt="tokencost demo in Claude Code" width="700" />
 </p>
 
 ## Install in 30 seconds
