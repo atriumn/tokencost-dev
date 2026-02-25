@@ -26,6 +26,7 @@ export default defineConfig({
       ],
       sidebar: [
         { label: 'Getting Started', link: '/getting-started/' },
+        { label: 'Examples', link: '/examples/' },
         {
           label: 'Tool Reference',
           autogenerate: { directory: 'tools' },
