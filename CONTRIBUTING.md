@@ -42,6 +42,17 @@ npm run test:run      # Run tests once and exit
 
 All tests must pass before submitting a pull request.
 
+## Linting
+
+This project uses [Biome](https://biomejs.dev/) for linting and formatting:
+
+```bash
+npm run lint          # Check for lint and formatting issues
+npm run lint:fix      # Auto-fix issues
+```
+
+CI enforces linting — run `npm run lint` before pushing.
+
 ## Building and Running
 
 To build the TypeScript code:
@@ -58,6 +69,7 @@ npm start
 
 - Use TypeScript for all code
 - Follow ESM module conventions (this project uses `"type": "module"`)
+- Run `npm run lint` to check formatting and lint rules ([Biome](https://biomejs.dev/) enforces style automatically)
 - Keep code readable and maintainable
 - Comments should explain the "why", not the "what"
 

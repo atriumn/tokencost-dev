@@ -1,5 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { existsSync, readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, writeFileSync } from "node:fs";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 // Mock fs so disk cache doesn't interfere
 vi.mock("node:fs", () => ({
@@ -303,9 +303,7 @@ describe("pricing module", () => {
       });
 
       const { refreshPrices } = await loadPricing();
-      await expect(refreshPrices()).rejects.toThrow(
-        "Failed to fetch pricing data: 503",
-      );
+      await expect(refreshPrices()).rejects.toThrow("Failed to fetch pricing data: 503");
     });
   });
 
@@ -435,10 +433,9 @@ describe("pricing module", () => {
       const { refreshPrices } = await loadPricing();
       await refreshPrices();
 
-      expect(mkdirSync).toHaveBeenCalledWith(
-        expect.stringContaining(".cache"),
-        { recursive: true },
-      );
+      expect(mkdirSync).toHaveBeenCalledWith(expect.stringContaining(".cache"), {
+        recursive: true,
+      });
     });
   });
 });

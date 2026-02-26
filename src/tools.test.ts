@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import type { ModelEntry } from "./pricing.js";
 
 // Mock the pricing module
@@ -11,9 +11,9 @@ vi.mock("./pricing.js", async (importOriginal) => {
   };
 });
 
+import { getModels, refreshPrices } from "./pricing.js";
 // Import after mock setup
-import { executeTool, calculateTieredCost } from "./tools.js";
-import { getModels, refreshPrices, TIERED_PRICING_THRESHOLD } from "./pricing.js";
+import { calculateTieredCost, executeTool } from "./tools.js";
 
 /** Helper to build a minimal ModelEntry */
 function makeModel(overrides: Partial<ModelEntry> & { key: string }): ModelEntry {
@@ -403,9 +403,7 @@ describe("executeTool", () => {
     });
 
     it("handles getModels throwing an error", async () => {
-      vi.mocked(getModels).mockRejectedValueOnce(
-        new Error("No pricing data available"),
-      );
+      vi.mocked(getModels).mockRejectedValueOnce(new Error("No pricing data available"));
 
       const result = await executeTool("get_model_details", {
         model_name: "gpt-4o",
@@ -417,9 +415,7 @@ describe("executeTool", () => {
     });
 
     it("handles refreshPrices throwing an error", async () => {
-      vi.mocked(refreshPrices).mockRejectedValueOnce(
-        new Error("Network failure"),
-      );
+      vi.mocked(refreshPrices).mockRejectedValueOnce(new Error("Network failure"));
 
       const result = await executeTool("refresh_prices", {});
 

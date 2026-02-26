@@ -19,6 +19,8 @@
     "dev": "tsc --watch",
     "start": "node dist/index.js",
     "prepublishOnly": "npm run build",
+    "lint": "biome check src/",
+    "lint:fix": "biome check --write src/",
     "test": "vitest",
     "test:run": "vitest run"
   },
@@ -47,6 +49,7 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@biomejs/biome": "2.4.4",
     "@types/node": "^25.3.0",
     "@vitest/coverage-v8": "^4.0.18",
     "typescript": "^5.9.3",

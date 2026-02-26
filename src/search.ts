@@ -68,14 +68,10 @@ function buildIndex(models: Record<string, ModelEntry>): Fuse<{ key: string }> {
   return fuse;
 }
 
-export function fuzzyMatch(
-  query: string,
-  models: Record<string, ModelEntry>,
-): ModelEntry | null {
+export function fuzzyMatch(query: string, models: Record<string, ModelEntry>): ModelEntry | null {
   // Strip provider prefix first, then handle fine-tuned pattern
   const withoutProvider = stripProviderPrefix(query);
-  const { base, isFineTuned } = extractFineTunedBase(withoutProvider);
-  const normalizedQuery = base;
+  const { base: normalizedQuery } = extractFineTunedBase(withoutProvider);
 
   // Try exact match first
   if (models[normalizedQuery]) {
@@ -106,7 +102,7 @@ export function fuzzyMatchWithMetadata(
   models: Record<string, ModelEntry>,
 ): SearchResult {
   const withoutProvider = stripProviderPrefix(query);
-  const { base, isFineTuned } = extractFineTunedBase(withoutProvider);
+  const { isFineTuned } = extractFineTunedBase(withoutProvider);
   const entry = fuzzyMatch(query, models);
   return { entry, isFineTuned };
 }

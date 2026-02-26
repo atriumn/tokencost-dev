@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
-import { fuzzyMatch, fuzzyMatchMultiple, fuzzyMatchWithMetadata } from "./search.js";
+import { describe, expect, it } from "vitest";
 import type { ModelEntry } from "./pricing.js";
+import { fuzzyMatch, fuzzyMatchMultiple, fuzzyMatchWithMetadata } from "./search.js";
 
 /** Helper to build a minimal ModelEntry for testing */
 function makeModel(overrides: Partial<ModelEntry> & { key: string }): ModelEntry {
@@ -76,92 +76,92 @@ describe("fuzzyMatch", () => {
   it("strips azure/ prefix before matching", () => {
     const result = fuzzyMatch("azure/gpt-4o", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o");
+    expect(result?.key).toBe("gpt-4o");
   });
 
   it("strips bedrock/ prefix before matching", () => {
     const result = fuzzyMatch("bedrock/gpt-4o", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o");
+    expect(result?.key).toBe("gpt-4o");
   });
 
   it("strips vertex_ai/ prefix before matching", () => {
     const result = fuzzyMatch("vertex_ai/gemini-2.0-flash", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gemini-2.0-flash");
+    expect(result?.key).toBe("gemini-2.0-flash");
   });
 
   it("strips vertex_ai_beta/ prefix before matching", () => {
     const result = fuzzyMatch("vertex_ai_beta/claude-sonnet-4-5", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("claude-sonnet-4-5");
+    expect(result?.key).toBe("claude-sonnet-4-5");
   });
 
   it("strips openrouter/ prefix before matching", () => {
     const result = fuzzyMatch("openrouter/gpt-4o-mini", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o-mini");
+    expect(result?.key).toBe("gpt-4o-mini");
   });
 
   it("strips together_ai/ prefix before matching", () => {
     const result = fuzzyMatch("together_ai/claude-opus-4", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("claude-opus-4");
+    expect(result?.key).toBe("claude-opus-4");
   });
 
   it("strips fireworks_ai/ prefix before matching", () => {
     const result = fuzzyMatch("fireworks_ai/gpt-4o", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o");
+    expect(result?.key).toBe("gpt-4o");
   });
 
   it("strips prefix with case-insensitive matching", () => {
     const result = fuzzyMatch("AZURE/GPT-4O", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o");
+    expect(result?.key).toBe("gpt-4o");
   });
 
   it("returns exact match when key matches exactly", () => {
     const result = fuzzyMatch("gpt-4o", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o");
+    expect(result?.key).toBe("gpt-4o");
   });
 
   it("returns exact match for full model name", () => {
     const result = fuzzyMatch("claude-sonnet-4-5", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("claude-sonnet-4-5");
+    expect(result?.key).toBe("claude-sonnet-4-5");
   });
 
   it("handles case-insensitive exact match", () => {
     const result = fuzzyMatch("GPT-4O", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o");
+    expect(result?.key).toBe("gpt-4o");
   });
 
   it("handles mixed case exact match", () => {
     const result = fuzzyMatch("Claude-Sonnet-4-5", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("claude-sonnet-4-5");
+    expect(result?.key).toBe("claude-sonnet-4-5");
   });
 
   it("fuzzy matches partial/close model names", () => {
     const result = fuzzyMatch("claude sonnet", sampleModels);
     expect(result).not.toBeNull();
     // Should match one of the claude models
-    expect(result!.key).toContain("claude");
+    expect(result?.key).toContain("claude");
   });
 
   it("fuzzy matches with typos", () => {
     const result = fuzzyMatch("gpt-4o-mni", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o-mini");
+    expect(result?.key).toBe("gpt-4o-mini");
   });
 
   it("fuzzy matches gemini models", () => {
     const result = fuzzyMatch("gemini-2.0", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toContain("gemini");
+    expect(result?.key).toContain("gemini");
   });
 
   it("returns null for garbage input", () => {
@@ -242,26 +242,26 @@ describe("fine-tuned model patterns (ft: prefix)", () => {
   it("extracts base model from OpenAI fine-tuned pattern", () => {
     const result = fuzzyMatch("ft:gpt-4o:my-org:custom_suffix:id", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o");
+    expect(result?.key).toBe("gpt-4o");
   });
 
   it("extracts base model from fine-tuned gpt-4o-mini", () => {
     const result = fuzzyMatch("ft:gpt-4o-mini:my-org:suffix:abc123", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o-mini");
+    expect(result?.key).toBe("gpt-4o-mini");
   });
 
   it("returns metadata indicating fine-tuned status", () => {
     const result = fuzzyMatchWithMetadata("ft:gpt-4o:my-org:custom:id", sampleModels);
     expect(result.entry).not.toBeNull();
-    expect(result.entry!.key).toBe("gpt-4o");
+    expect(result.entry?.key).toBe("gpt-4o");
     expect(result.isFineTuned).toBe(true);
   });
 
   it("returns metadata with isFineTuned=false for non-fine-tuned models", () => {
     const result = fuzzyMatchWithMetadata("gpt-4o", sampleModels);
     expect(result.entry).not.toBeNull();
-    expect(result.entry!.key).toBe("gpt-4o");
+    expect(result.entry?.key).toBe("gpt-4o");
     expect(result.isFineTuned).toBe(false);
   });
 
@@ -269,13 +269,13 @@ describe("fine-tuned model patterns (ft: prefix)", () => {
     // ft: should be processed before provider prefix
     const result = fuzzyMatch("azure/ft:gpt-4o:my-org:custom:id", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o");
+    expect(result?.key).toBe("gpt-4o");
   });
 
   it("handles case-insensitive fine-tuned pattern", () => {
     const result = fuzzyMatch("FT:GPT-4O:MY-ORG:CUSTOM:ID", sampleModels);
     expect(result).not.toBeNull();
-    expect(result!.key).toBe("gpt-4o");
+    expect(result?.key).toBe("gpt-4o");
   });
 
   it("fuzzyMatchMultiple handles fine-tuned patterns", () => {

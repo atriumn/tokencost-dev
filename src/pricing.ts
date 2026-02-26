@@ -1,5 +1,5 @@
-import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -40,10 +40,7 @@ interface CacheData {
 
 let cache: CacheData | null = null;
 
-function normalize(
-  key: string,
-  raw: Record<string, unknown>,
-): ModelEntry | null {
+function normalize(key: string, raw: Record<string, unknown>): ModelEntry | null {
   const inputCost = Number(raw.input_cost_per_token) || 0;
   const outputCost = Number(raw.output_cost_per_token) || 0;
 
@@ -57,9 +54,7 @@ function normalize(
       : null;
 
   const cacheReadCost =
-    typeof raw.cache_read_input_token_cost === "number"
-      ? raw.cache_read_input_token_cost
-      : null;
+    typeof raw.cache_read_input_token_cost === "number" ? raw.cache_read_input_token_cost : null;
 
   return {
     key,
@@ -69,26 +64,19 @@ function normalize(
     output_cost_per_million: outputCost * 1_000_000,
     input_cost_per_token_above_200k: tieredInput,
     output_cost_per_token_above_200k: tieredOutput,
-    input_cost_per_million_above_200k:
-      tieredInput != null ? tieredInput * 1_000_000 : null,
-    output_cost_per_million_above_200k:
-      tieredOutput != null ? tieredOutput * 1_000_000 : null,
+    input_cost_per_million_above_200k: tieredInput != null ? tieredInput * 1_000_000 : null,
+    output_cost_per_million_above_200k: tieredOutput != null ? tieredOutput * 1_000_000 : null,
     cache_read_input_token_cost: cacheReadCost,
     cache_read_input_token_cost_per_million:
       cacheReadCost != null ? cacheReadCost * 1_000_000 : null,
-    max_input_tokens:
-      typeof raw.max_input_tokens === "number" ? raw.max_input_tokens : null,
-    max_output_tokens:
-      typeof raw.max_output_tokens === "number" ? raw.max_output_tokens : null,
-    max_tokens:
-      typeof raw.max_tokens === "number" ? raw.max_tokens : null,
-    litellm_provider:
-      typeof raw.litellm_provider === "string" ? raw.litellm_provider : "unknown",
+    max_input_tokens: typeof raw.max_input_tokens === "number" ? raw.max_input_tokens : null,
+    max_output_tokens: typeof raw.max_output_tokens === "number" ? raw.max_output_tokens : null,
+    max_tokens: typeof raw.max_tokens === "number" ? raw.max_tokens : null,
+    litellm_provider: typeof raw.litellm_provider === "string" ? raw.litellm_provider : "unknown",
     mode: typeof raw.mode === "string" ? raw.mode : "chat",
     supports_vision: raw.supports_vision === true,
     supports_function_calling: raw.supports_function_calling === true,
-    supports_parallel_function_calling:
-      raw.supports_parallel_function_calling === true,
+    supports_parallel_function_calling: raw.supports_parallel_function_calling === true,
   };
 }
 
@@ -180,12 +168,13 @@ export async function getModels(): Promise<Record<string, ModelEntry>> {
     if (cache) {
       return cache.models;
     }
-    throw new Error(
-      "No pricing data available — fetch failed and no cache exists",
-    );
+    throw new Error("No pricing data available — fetch failed and no cache exists");
   }
 
-  return cache!.models;
+  if (!cache) {
+    throw new Error("No pricing data available — refresh succeeded but cache is empty");
+  }
+  return cache.models;
 }
 
 export function getModelCount(): number {

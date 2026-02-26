@@ -1,11 +1,6 @@
 import { z } from "zod";
-import {
-  getModels,
-  refreshPrices,
-  TIERED_PRICING_THRESHOLD,
-  type ModelEntry,
-} from "./pricing.js";
-import { fuzzyMatch, fuzzyMatchWithMetadata } from "./search.js";
+import { getModels, type ModelEntry, refreshPrices, TIERED_PRICING_THRESHOLD } from "./pricing.js";
+import { fuzzyMatchWithMetadata } from "./search.js";
 
 export const tools = [
   {
@@ -61,8 +56,7 @@ export const tools = [
       properties: {
         provider: {
           type: "string",
-          description:
-            "Filter by provider (e.g. 'anthropic', 'openai', 'google', 'amazon')",
+          description: "Filter by provider (e.g. 'anthropic', 'openai', 'google', 'amazon')",
         },
         min_context: {
           type: "number",
@@ -144,14 +138,10 @@ export function calculateTieredCost(
   let inputTieredCost = 0;
   let tieredInput = false;
 
-  if (
-    model.input_cost_per_token_above_200k != null &&
-    inputTokens > threshold
-  ) {
+  if (model.input_cost_per_token_above_200k != null && inputTokens > threshold) {
     tieredInput = true;
     inputBaseCost = threshold * model.input_cost_per_token;
-    inputTieredCost =
-      (inputTokens - threshold) * model.input_cost_per_token_above_200k;
+    inputTieredCost = (inputTokens - threshold) * model.input_cost_per_token_above_200k;
   } else {
     inputBaseCost = inputTokens * model.input_cost_per_token;
   }
@@ -160,14 +150,10 @@ export function calculateTieredCost(
   let outputTieredCost = 0;
   let tieredOutput = false;
 
-  if (
-    model.output_cost_per_token_above_200k != null &&
-    outputTokens > threshold
-  ) {
+  if (model.output_cost_per_token_above_200k != null && outputTokens > threshold) {
     tieredOutput = true;
     outputBaseCost = threshold * model.output_cost_per_token;
-    outputTieredCost =
-      (outputTokens - threshold) * model.output_cost_per_token_above_200k;
+    outputTieredCost = (outputTokens - threshold) * model.output_cost_per_token_above_200k;
   } else {
     outputBaseCost = outputTokens * model.output_cost_per_token;
   }
@@ -192,8 +178,7 @@ function formatModelDetails(model: ModelEntry): string {
   const capabilities: string[] = [];
   if (model.supports_vision) capabilities.push("vision");
   if (model.supports_function_calling) capabilities.push("function_calling");
-  if (model.supports_parallel_function_calling)
-    capabilities.push("parallel_function_calling");
+  if (model.supports_parallel_function_calling) capabilities.push("parallel_function_calling");
 
   const hasTieredInput = model.input_cost_per_million_above_200k != null;
   const hasTieredOutput = model.output_cost_per_million_above_200k != null;
@@ -206,14 +191,10 @@ function formatModelDetails(model: ModelEntry): string {
       `Tiered Pricing (above ${formatTokenCount(TIERED_PRICING_THRESHOLD)} tokens, per 1M):`,
     );
     if (hasTieredInput) {
-      tieredLines.push(
-        `  Input:  ${formatCost(model.input_cost_per_million_above_200k!)}`,
-      );
+      tieredLines.push(`  Input:  ${formatCost(model.input_cost_per_million_above_200k ?? 0)}`);
     }
     if (hasTieredOutput) {
-      tieredLines.push(
-        `  Output: ${formatCost(model.output_cost_per_million_above_200k!)}`,
-      );
+      tieredLines.push(`  Output: ${formatCost(model.output_cost_per_million_above_200k ?? 0)}`);
     }
   }
 
@@ -240,9 +221,7 @@ function formatModelDetails(model: ModelEntry): string {
     `Context Window:`,
     `  Max Input:  ${formatTokenCount(model.max_input_tokens)}`,
     `  Max Output: ${formatTokenCount(model.max_output_tokens)}`,
-    ...(model.max_tokens !== null
-      ? [`  Max Tokens: ${formatTokenCount(model.max_tokens)}`]
-      : []),
+    ...(model.max_tokens !== null ? [`  Max Tokens: ${formatTokenCount(model.max_tokens)}`] : []),
     ``,
     `Capabilities: ${capabilities.length > 0 ? capabilities.join(", ") : "none listed"}`,
   ].join("\n");
@@ -299,9 +278,7 @@ export async function executeTool(
 
         // Resolve cached token count: cap at input_tokens, ignore if model doesn't support caching
         const resolvedCachedTokens =
-          cached_tokens != null &&
-          model.cache_read_input_token_cost != null &&
-          cached_tokens > 0
+          cached_tokens != null && model.cache_read_input_token_cost != null && cached_tokens > 0
             ? Math.min(cached_tokens, input_tokens)
             : 0;
         const uncachedInputTokens = input_tokens - resolvedCachedTokens;
@@ -309,7 +286,7 @@ export async function executeTool(
         const result = calculateTieredCost(model, uncachedInputTokens, output_tokens);
         const cachedCost =
           resolvedCachedTokens > 0
-            ? resolvedCachedTokens * model.cache_read_input_token_cost!
+            ? resolvedCachedTokens * (model.cache_read_input_token_cost ?? 0)
             : 0;
         const totalCost = result.totalCost + cachedCost;
 
@@ -324,7 +301,7 @@ export async function executeTool(
 
         if (resolvedCachedTokens > 0) {
           lines.push(
-            `  Cached input:   ${formatTokenCount(resolvedCachedTokens)} tokens × ${formatCost(model.cache_read_input_token_cost_per_million!)}/1M = ${formatCost(cachedCost)}`,
+            `  Cached input:   ${formatTokenCount(resolvedCachedTokens)} tokens × ${formatCost(model.cache_read_input_token_cost_per_million ?? 0)}/1M = ${formatCost(cachedCost)}`,
           );
         }
 
@@ -335,7 +312,7 @@ export async function executeTool(
             `  Input (base):  ${formatTokenCount(baseTokens)} tokens × ${formatCost(model.input_cost_per_million)}/1M = ${formatCost(result.inputBaseCost)}`,
           );
           lines.push(
-            `  Input (>200K): ${formatTokenCount(tieredTokens)} tokens × ${formatCost(model.input_cost_per_million_above_200k!)}/1M = ${formatCost(result.inputTieredCost)}`,
+            `  Input (>200K): ${formatTokenCount(tieredTokens)} tokens × ${formatCost(model.input_cost_per_million_above_200k ?? 0)}/1M = ${formatCost(result.inputTieredCost)}`,
           );
         } else {
           lines.push(
@@ -350,7 +327,7 @@ export async function executeTool(
             `  Output (base):  ${formatTokenCount(baseTokens)} tokens × ${formatCost(model.output_cost_per_million)}/1M = ${formatCost(result.outputBaseCost)}`,
           );
           lines.push(
-            `  Output (>200K): ${formatTokenCount(tieredTokens)} tokens × ${formatCost(model.output_cost_per_million_above_200k!)}/1M = ${formatCost(result.outputTieredCost)}`,
+            `  Output (>200K): ${formatTokenCount(tieredTokens)} tokens × ${formatCost(model.output_cost_per_million_above_200k ?? 0)}/1M = ${formatCost(result.outputTieredCost)}`,
           );
         } else {
           lines.push(
@@ -372,8 +349,7 @@ export async function executeTool(
       }
 
       case "compare_models": {
-        const { provider, min_context, mode } =
-          compareModelsSchema.parse(args);
+        const { provider, min_context, mode } = compareModelsSchema.parse(args);
         const models = await getModels();
 
         let filtered = Object.values(models);
@@ -389,17 +365,13 @@ export async function executeTool(
 
         if (min_context !== undefined) {
           filtered = filtered.filter(
-            (m) =>
-              m.max_input_tokens !== null &&
-              m.max_input_tokens >= min_context,
+            (m) => m.max_input_tokens !== null && m.max_input_tokens >= min_context,
           );
         }
 
         if (mode) {
           const lowerMode = mode.toLowerCase();
-          filtered = filtered.filter(
-            (m) => m.mode.toLowerCase() === lowerMode,
-          );
+          filtered = filtered.filter((m) => m.mode.toLowerCase() === lowerMode);
         }
 
         if (filtered.length === 0) {
@@ -414,9 +386,7 @@ export async function executeTool(
         }
 
         // Sort by input cost (most cost-effective first)
-        filtered.sort(
-          (a, b) => a.input_cost_per_token - b.input_cost_per_token,
-        );
+        filtered.sort((a, b) => a.input_cost_per_token - b.input_cost_per_token);
         const top = filtered.slice(0, 5);
 
         const header = `Top ${top.length} most cost-effective models${provider ? ` (provider: ${provider})` : ""}${min_context ? ` (min context: ${formatTokenCount(min_context)})` : ""}${mode ? ` (mode: ${mode})` : ""}:\n`;
@@ -435,9 +405,7 @@ export async function executeTool(
         const total = `\n(${filtered.length} models matched total)`;
 
         return {
-          content: [
-            { type: "text", text: header + rows.join("\n\n") + total },
-          ],
+          content: [{ type: "text", text: header + rows.join("\n\n") + total }],
         };
       }
 
