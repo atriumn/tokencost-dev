@@ -4,14 +4,7 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
-## [Unreleased]
-
-### Added
-- Examples page on docs site with real-world usage scenarios
-- FAQ page on docs site
-- Installation instructions for Claude Desktop, VS Code, and Windsurf
-
-## [0.1.1] - 2025-02-20
+## [0.1.1](https://github.com/atriumn/tokencost-dev/compare/v0.1.0...v0.1.1) - 2025-02-20
 
 ### Added
 - GitHub Actions release workflow with OIDC trusted publishing
@@ -22,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 ### Fixed
 - npm publish now uses provenance via OIDC (no manual tokens)
 
-## [0.1.0] - 2025-02-14
+## [0.1.0](https://github.com/atriumn/tokencost-dev/releases/tag/v0.1.0) - 2025-02-14
 
 ### Added
 - Initial release
@@ -33,7 +26,3 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/), and this
 - Fuzzy model name matching via Fuse.js
 - In-memory cache with 24h TTL and disk fallback
 - Docs site at tokencost.dev (Astro + Starlight)
-
-[Unreleased]: https://github.com/atriumn/tokencost-dev/compare/v0.1.1...HEAD
-[0.1.1]: https://github.com/atriumn/tokencost-dev/compare/v0.1.0...v0.1.1
-[0.1.0]: https://github.com/atriumn/tokencost-dev/releases/tag/v0.1.0
