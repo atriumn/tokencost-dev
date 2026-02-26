@@ -1,6 +1,6 @@
 ---
 title: Getting Started
-description: Install and configure the tokencost MCP server in Claude Code, Cursor, or any MCP client.
+description: Install and configure the tokencost MCP server in Claude Code, Claude Desktop, VS Code, Cursor, Windsurf, or any MCP client.
 ---
 
 tokencost (`tokencost-dev`) is an MCP server that provides real-time LLM pricing data. It runs as a local process and communicates over stdio.
@@ -11,7 +11,7 @@ tokencost (`tokencost-dev`) is an MCP server that provides real-time LLM pricing
 
 That's it. No API keys, no accounts, no configuration files.
 
-## Install in Claude Code
+## Claude Code
 
 The fastest way to get started:
 
@@ -21,7 +21,46 @@ claude mcp add tokencost-dev -- npx -y tokencost-dev
 
 This registers the MCP server and it will be available in all future Claude Code sessions.
 
-## Install in Cursor
+## Claude Desktop
+
+Open **Claude > Settings > Developer > Edit Config** to open `claude_desktop_config.json`, then add:
+
+```json
+{
+  "mcpServers": {
+    "tokencost-dev": {
+      "command": "npx",
+      "args": ["-y", "tokencost-dev"]
+    }
+  }
+}
+```
+
+Save the file and restart Claude Desktop.
+
+:::note[Config file location]
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+:::
+
+## VS Code (GitHub Copilot)
+
+Create or edit `.vscode/mcp.json` in your workspace:
+
+```json
+{
+  "servers": {
+    "tokencost-dev": {
+      "command": "npx",
+      "args": ["-y", "tokencost-dev"]
+    }
+  }
+}
+```
+
+VS Code will detect the file and make the tools available in Copilot chat (agent mode).
+
+## Cursor
 
 Add to your Cursor MCP config (`.cursor/mcp.json`):
 
@@ -36,9 +75,9 @@ Add to your Cursor MCP config (`.cursor/mcp.json`):
 }
 ```
 
-## Manual MCP config
+## Windsurf
 
-For other MCP clients, the server config is:
+Open **Windsurf Settings > Cascade > MCP Servers**, or edit `~/.codeium/windsurf/mcp_config.json` directly:
 
 ```json
 {
@@ -50,6 +89,23 @@ For other MCP clients, the server config is:
   }
 }
 ```
+
+## Other MCP clients
+
+The server config is the same for any MCP client that supports stdio transport:
+
+```json
+{
+  "mcpServers": {
+    "tokencost-dev": {
+      "command": "npx",
+      "args": ["-y", "tokencost-dev"]
+    }
+  }
+}
+```
+
+Consult your client's documentation for where to place this configuration.
 
 ## Your first query
 

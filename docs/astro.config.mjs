@@ -31,6 +31,7 @@ export default defineConfig({
           label: 'Tool Reference',
           autogenerate: { directory: 'tools' },
         },
+        { label: 'FAQ', link: '/faq/' },
       ],
     }),
   ],
