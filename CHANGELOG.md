@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.3](https://github.com/atriumn/tokencost-dev/compare/v0.1.2...v0.1.3) (2026-02-27)
+
+
+### Features
+
+* add MCP registry metadata for official directory listing ([605e142](https://github.com/atriumn/tokencost-dev/commit/605e142cb7a189aa494ff1b6b3d4e983438b66ff))
+* add MCP registry metadata for official directory listing ([8b63952](https://github.com/atriumn/tokencost-dev/commit/8b6395208ac8cd93cc91a8c29738fc33da5d0dc9))
+
+
+### Bug Fixes
+
+* use personal namespace for MCP registry publishing ([61bed6f](https://github.com/atriumn/tokencost-dev/commit/61bed6fefffff31f0b033d4b9d4326331ae0ff82))
+* use personal namespace for MCP registry publishing ([604ca91](https://github.com/atriumn/tokencost-dev/commit/604ca911badc5599c4f2385d926626a8d947ca7b))
+
 ## [0.1.2](https://github.com/atriumn/tokencost-dev/compare/v0.1.1...v0.1.2) (2026-02-26)
 
 
