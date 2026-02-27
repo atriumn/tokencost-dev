@@ -1,0 +1,20 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-12-11/server.schema.json",
+  "name": "io.github.atriumn/tokencost-dev",
+  "description": "LLM pricing oracle — model lookup, cost estimation, and comparison via LiteLLM",
+  "repository": {
+    "url": "https://github.com/atriumn/tokencost-dev",
+    "source": "github"
+  },
+  "version": "0.1.2",
+  "packages": [
+    {
+      "registryType": "npm",
+      "identifier": "tokencost-dev",
+      "version": "0.1.2",
+      "transport": {
+        "type": "stdio"
+      }
+    }
+  ]
+}
