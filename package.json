@@ -52,7 +52,7 @@
     "@biomejs/biome": "2.4.7",
     "@types/node": "^25.3.0",
     "@vitest/coverage-v8": "^4.0.18",
-    "typescript": "^5.9.3",
+    "typescript": "^6.0.2",
     "vitest": "^4.0.18"
   },
   "engines": {
