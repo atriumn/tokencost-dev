@@ -106,18 +106,3 @@ export function fuzzyMatchWithMetadata(
   const entry = fuzzyMatch(query, models);
   return { entry, isFineTuned };
 }
-
-export function fuzzyMatchMultiple(
-  query: string,
-  models: Record<string, ModelEntry>,
-  limit = 5,
-): ModelEntry[] {
-  // Strip provider prefix first, then handle fine-tuned pattern
-  const withoutProvider = stripProviderPrefix(query);
-  const { base } = extractFineTunedBase(withoutProvider);
-  const normalizedQuery = base;
-
-  const index = buildIndex(models);
-  const results = index.search(normalizedQuery, { limit });
-  return results.map((r) => models[r.item.key]);
-}

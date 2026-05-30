@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { ModelEntry } from "./pricing.js";
-import { fuzzyMatch, fuzzyMatchMultiple, fuzzyMatchWithMetadata } from "./search.js";
+import { fuzzyMatch, fuzzyMatchWithMetadata } from "./search.js";
 
 /** Helper to build a minimal ModelEntry for testing */
 function makeModel(overrides: Partial<ModelEntry> & { key: string }): ModelEntry {
@@ -181,63 +181,6 @@ describe("fuzzyMatch", () => {
   });
 });
 
-describe("fuzzyMatchMultiple", () => {
-  it("strips openrouter/ prefix before matching", () => {
-    const results = fuzzyMatchMultiple("openrouter/claude", sampleModels);
-    expect(results.length).toBeGreaterThanOrEqual(1);
-    const keys = results.map((r) => r.key);
-    expect(keys.some((k) => k.includes("claude"))).toBe(true);
-  });
-
-  it("strips azure/ prefix before matching multiple", () => {
-    const results = fuzzyMatchMultiple("azure/gpt", sampleModels);
-    expect(results.length).toBeGreaterThanOrEqual(1);
-    const keys = results.map((r) => r.key);
-    expect(keys.some((k) => k.includes("gpt"))).toBe(true);
-  });
-
-  it("returns up to the default limit of 5 results", () => {
-    const results = fuzzyMatchMultiple("claude", sampleModels);
-    // We have 2 claude models, so should return at most 2 for "claude"
-    expect(results.length).toBeGreaterThanOrEqual(1);
-    expect(results.length).toBeLessThanOrEqual(5);
-  });
-
-  it("respects the limit parameter", () => {
-    const results = fuzzyMatchMultiple("model", sampleModels, 2);
-    expect(results.length).toBeLessThanOrEqual(2);
-  });
-
-  it("returns ModelEntry objects with correct structure", () => {
-    const results = fuzzyMatchMultiple("gpt", sampleModels, 3);
-    expect(results.length).toBeGreaterThanOrEqual(1);
-
-    for (const entry of results) {
-      expect(entry).toHaveProperty("key");
-      expect(entry).toHaveProperty("input_cost_per_token");
-      expect(entry).toHaveProperty("output_cost_per_token");
-      expect(entry).toHaveProperty("litellm_provider");
-    }
-  });
-
-  it("returns empty array for garbage query", () => {
-    const results = fuzzyMatchMultiple("xyzzyplugh_12345", sampleModels);
-    expect(results).toEqual([]);
-  });
-
-  it("returns empty array for empty models", () => {
-    const results = fuzzyMatchMultiple("gpt-4o", {});
-    expect(results).toEqual([]);
-  });
-
-  it("matches claude models with a general query", () => {
-    const results = fuzzyMatchMultiple("claude", sampleModels, 10);
-    const keys = results.map((r) => r.key);
-    expect(keys).toContain("claude-sonnet-4-5");
-    expect(keys).toContain("claude-opus-4");
-  });
-});
-
 describe("fine-tuned model patterns (ft: prefix)", () => {
   it("extracts base model from OpenAI fine-tuned pattern", () => {
     const result = fuzzyMatch("ft:gpt-4o:my-org:custom_suffix:id", sampleModels);
@@ -276,13 +219,6 @@ describe("fine-tuned model patterns (ft: prefix)", () => {
     const result = fuzzyMatch("FT:GPT-4O:MY-ORG:CUSTOM:ID", sampleModels);
     expect(result).not.toBeNull();
     expect(result?.key).toBe("gpt-4o");
-  });
-
-  it("fuzzyMatchMultiple handles fine-tuned patterns", () => {
-    const results = fuzzyMatchMultiple("ft:gpt:my-org:suffix:id", sampleModels);
-    expect(results.length).toBeGreaterThanOrEqual(1);
-    const keys = results.map((r) => r.key);
-    expect(keys.some((k) => k.includes("gpt"))).toBe(true);
   });
 
   it("returns null for invalid fine-tuned pattern with missing base model", () => {

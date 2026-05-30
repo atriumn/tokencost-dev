@@ -176,7 +176,3 @@ export async function getModels(): Promise<Record<string, ModelEntry>> {
   }
   return cache.models;
 }
-
-export function getModelCount(): number {
-  return cache ? Object.keys(cache.models).length : 0;
-}

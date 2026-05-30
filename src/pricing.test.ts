@@ -368,37 +368,6 @@ describe("pricing module", () => {
     });
   });
 
-  describe("getModelCount", () => {
-    it("returns 0 when no cache loaded", async () => {
-      const { getModelCount } = await loadPricing();
-      expect(getModelCount()).toBe(0);
-    });
-
-    it("returns correct count after loading data", async () => {
-      globalThis.fetch = vi.fn().mockResolvedValue({
-        ok: true,
-        json: async () => ({
-          "model-a": {
-            input_cost_per_token: 0.001,
-            output_cost_per_token: 0.002,
-          },
-          "model-b": {
-            input_cost_per_token: 0.003,
-            output_cost_per_token: 0.004,
-          },
-          "model-c": {
-            input_cost_per_token: 0.005,
-            output_cost_per_token: 0.006,
-          },
-        }),
-      });
-
-      const { refreshPrices, getModelCount } = await loadPricing();
-      await refreshPrices();
-      expect(getModelCount()).toBe(3);
-    });
-  });
-
   describe("disk cache", () => {
     it("calls writeFileSync after refreshPrices", async () => {
       globalThis.fetch = vi.fn().mockResolvedValue({
