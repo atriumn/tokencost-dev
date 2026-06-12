@@ -12,6 +12,12 @@ updates:
         update-types:
           - "minor"
           - "patch"
+    ignore:
+      # TypeScript 6.0 is a transitional major (pre-native-TS7) and breaks
+      # ambient Node globals. Hold the 6.x line; TS 7 will still arrive as a
+      # normal Dependabot PR. Revisit 6.x deliberately as a tracked migration.
+      - dependency-name: "typescript"
+        versions: ["6.x"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
