@@ -73,6 +73,13 @@ export function fuzzyMatch(query: string, models: Record<string, ModelEntry>): M
   const withoutProvider = stripProviderPrefix(query);
   const { base: normalizedQuery } = extractFineTunedBase(withoutProvider);
 
+  // An empty/whitespace query has no meaningful match. Newer fuse.js versions
+  // return results for an empty pattern, so guard explicitly rather than relying
+  // on Fuse to return empty.
+  if (normalizedQuery.trim() === "") {
+    return null;
+  }
+
   // Try exact match first
   if (models[normalizedQuery]) {
     return models[normalizedQuery];
