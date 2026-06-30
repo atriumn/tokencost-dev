@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/), and this project adheres to [Semantic Versioning](https://semver.org/).
 
+## [0.1.4](https://github.com/atriumn/tokencost-dev/compare/v0.1.3...v0.1.4) (2026-06-30)
+
+
+### Bug Fixes
+
+* **search:** guard empty query in fuzzyMatch (newer fuse.js returns matches) ([#60](https://github.com/atriumn/tokencost-dev/issues/60)) ([f0c7b63](https://github.com/atriumn/tokencost-dev/commit/f0c7b63515b2f617fd77a3d54dc4eeebbad43ff8))
+
 ## [0.1.3](https://github.com/atriumn/tokencost-dev/compare/v0.1.2...v0.1.3) (2026-02-27)
 
 
