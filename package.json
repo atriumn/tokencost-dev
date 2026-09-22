@@ -1,6 +1,6 @@
 {
   "name": "tokencost-dev",
-  "version": "0.1.3",
+  "version": "0.1.4",
   "description": "LLM Pricing Oracle — MCP server exposing real model pricing data from LiteLLM",
   "type": "module",
   "main": "dist/index.js",
