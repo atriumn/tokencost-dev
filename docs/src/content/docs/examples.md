@@ -7,35 +7,59 @@ Here's what it looks like in practice — natural language questions, instant pr
 
 ![tokencost demo](/tokencost-dev.gif)
 
-Below are detailed examples of the three most common workflows.
+Below are detailed examples of the three most common workflows. All output is real, captured from the live registry.
 
 ## Cost comparison
 
 **Prompt:**
 
-> "I'm choosing between Claude Sonnet and GPT-5.2 for a summarization pipeline. Compare their pricing and context windows."
+> "I'm choosing between Claude Opus 5.5 and GPT-5.5 for an agent. Compare their pricing and context windows."
 
-**Tool called:** `compare_models`
+**Tool called:** `get_model_details` (twice — once per model)
 
 **Output:**
 
 ```
-Top 5 most cost-effective models matching your criteria:
+Model: claude-opus-5-5
+Provider: anthropic
+Mode: chat
 
-1. gpt-5.2
-   Provider: openai | Mode: chat
-   Input: $2.00/1M | Output: $8.00/1M
-   Context: 1,047K in / 64K out
-   Capabilities: function_calling, vision, parallel_function_calling
+Pricing (per 1M tokens):
+  Input:  $4.00
+  Output: $20.00
 
-2. claude-sonnet-4-5
-   Provider: anthropic | Mode: chat
-   Input: $3.00/1M | Output: $15.00/1M
-   Context: 200K in / 8K out
-   Capabilities: function_calling, vision, parallel_function_calling
+Prompt Caching:
+  Cached input: $0.2000 / 1M tokens
+
+Context Window:
+  Max Input:  1.0M
+  Max Output: 128K
+  Max Tokens: 128K
+
+Capabilities: vision, function_calling
 ```
 
-**Takeaway:** GPT-5.2 is cheaper per token and has a much larger context window. Claude Sonnet 4.5 costs ~50% more on input and nearly 2x on output, but may be preferred for quality on specific tasks. For a high-volume summarization pipeline, the pricing difference adds up.
+```
+Model: gpt-5.5
+Provider: openai
+Mode: chat
+
+Pricing (per 1M tokens):
+  Input:  $5.00
+  Output: $30.00
+
+Prompt Caching:
+  Cached input: $0.5000 / 1M tokens
+
+Context Window:
+  Max Input:  1.1M
+  Max Output: 128K
+  Max Tokens: 128K
+
+Capabilities: vision, function_calling, parallel_function_calling
+```
+
+**Takeaway:** Opus 5.5 is 20% cheaper on input and a third cheaper on output, and its cached-input rate is less than half of GPT-5.5's — which matters for agents that resend long system prompts and tool definitions every turn. Context windows are effectively equal.
 
 ---
 
@@ -43,47 +67,47 @@ Top 5 most cost-effective models matching your criteria:
 
 **Prompt:**
 
-> "What's the biggest context window I can get for under $1/1M input tokens?"
+> "What's the cheapest Google model with at least a 1M-token context window?"
 
-**Tool called:** `compare_models`
+**Tool called:** `compare_models` with `provider: "google"`, `min_context: 1000000`, `mode: "chat"`
 
 **Output:**
 
 ```
-Top 5 most cost-effective models matching your criteria:
+Top 5 most cost-effective models (provider: google) (min context: 1.0M) (mode: chat):
+1. gemini-2.5-flash-lite
+   Provider: vertex_ai-language-models | Mode: chat
+   Input: $0.1000/1M | Output: $0.4000/1M
+   Context: 1.0M in / 66K out
+   Prompt caching: $0.0100/1M cached input
 
-1. gemini/gemini-2.5-flash
+2. gemini-2.5-flash-lite-preview-09-2025
+   Provider: vertex_ai-language-models | Mode: chat
+   Input: $0.1000/1M | Output: $0.4000/1M
+   Context: 1.0M in / 66K out
+   Prompt caching: $0.0100/1M cached input
+
+3. gemini/gemini-2.5-flash-lite
    Provider: gemini | Mode: chat
-   Input: $0.15/1M | Output: $0.60/1M
-   Context: 1,048K in / 65K out
-   Capabilities: function_calling, vision, parallel_function_calling
+   Input: $0.1000/1M | Output: $0.4000/1M
+   Context: 1.0M in / 66K out
+   Prompt caching: $0.0100/1M cached input
 
-2. gemini/gemini-2.0-flash
-   Provider: gemini | Mode: chat
-   Input: $0.10/1M | Output: $0.40/1M
-   Context: 1,048K in / 8K out
-   Capabilities: function_calling, vision, parallel_function_calling
+4. gemini-3.1-flash-lite-preview
+   Provider: vertex_ai-language-models | Mode: chat
+   Input: $0.2500/1M | Output: $1.50/1M
+   Context: 1.0M in / 66K out
+   Prompt caching: $0.0250/1M cached input
 
-3. deepseek/deepseek-chat
-   Provider: deepseek | Mode: chat
-   Input: $0.14/1M | Output: $0.28/1M
-   Context: 64K in / 8K out
-   Capabilities: function_calling, parallel_function_calling
-
-4. gemini/gemini-2.0-flash-lite
-   Provider: gemini | Mode: chat
-   Input: $0.04/1M | Output: $0.15/1M
-   Context: 1,048K in / 8K out
-   Capabilities: function_calling, vision, parallel_function_calling
-
-5. mistral/mistral-small-latest
-   Provider: mistral | Mode: chat
-   Input: $0.10/1M | Output: $0.30/1M
-   Context: 32K in / 32K out
-   Capabilities: function_calling, parallel_function_calling
+5. gemini-3.1-flash-lite
+   Provider: vertex_ai-language-models | Mode: chat
+   Input: $0.2500/1M | Output: $1.50/1M
+   Context: 1.0M in / 66K out
+   Prompt caching: $0.0250/1M cached input
+(80 models matched total; 4 without pricing data excluded)
 ```
 
-**Takeaway:** Gemini models dominate the budget-friendly, large-context space — offering 1M+ token windows at fractions of a cent. If you need a massive context window on a tight budget, Gemini 2.5 Flash gives you the best balance of capability and cost.
+**Takeaway:** `google` covers both the Gemini API and Vertex AI, which list the same models at the same price. Gemini 2.5 Flash-Lite gives you a 1M-token window for $0.10/1M input; stepping up to the 3.1 generation costs 2.5x on input.
 
 ---
 
@@ -91,48 +115,30 @@ Top 5 most cost-effective models matching your criteria:
 
 **Prompt:**
 
-> "How much would it cost to run Claude Opus vs Sonnet for a batch of 10K requests, averaging 2K input and 500 output tokens each?"
+> "How much would it cost to run Claude Opus 5.5 vs Sonnet 5.5 for a batch of 10K requests, averaging 2K input and 500 output tokens each?"
 
 **Tools called:** `calculate_estimate` (twice — once per model)
 
-**Claude Opus 4.6:**
+**Claude Opus 5.5:**
 
 ```
-Model: claude-opus-4-6
-Provider: anthropic
+Cost Estimate for claude-opus-5-5
 
-Token counts:
-  Input:  20,000,000 tokens
-  Output: 5,000,000 tokens
-
-Estimated cost:
-  Input:  $300.00
-  Output: $150.00
-  Total:  $450.00
-
-Rate per 1M tokens:
-  Input:  $15.00
-  Output: $30.00
+  Input:  20.0M tokens × $4.00/1M = $80.00
+  Output: 5.0M tokens × $20.00/1M = $100.00
+  ─────────────────────────────
+  Total:  $180.00
 ```
 
-**Claude Sonnet 4.6:**
+**Claude Sonnet 5.5:**
 
 ```
-Model: claude-sonnet-4-6
-Provider: anthropic
+Cost Estimate for claude-sonnet-5-5
 
-Token counts:
-  Input:  20,000,000 tokens
-  Output: 5,000,000 tokens
-
-Estimated cost:
-  Input:  $60.00
-  Output: $75.00
-  Total:  $135.00
-
-Rate per 1M tokens:
-  Input:  $3.00
-  Output: $15.00
+  Input:  20.0M tokens × $2.00/1M = $40.00
+  Output: 5.0M tokens × $10.00/1M = $50.00
+  ─────────────────────────────
+  Total:  $90.00
 ```
 
-**Takeaway:** Sonnet is 3.3x cheaper for this workload ($135 vs $450). Unless the task specifically requires Opus-level reasoning, Sonnet saves $315 per 10K-request batch — making it the clear choice for high-volume pipelines.
+**Takeaway:** Sonnet is exactly half the price for this workload ($90 vs $180). Unless the task needs Opus-level reasoning, Sonnet saves $90 per 10K-request batch.

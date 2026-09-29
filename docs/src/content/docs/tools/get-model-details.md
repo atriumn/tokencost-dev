@@ -3,15 +3,49 @@ title: get_model_details
 description: Look up pricing, context window, and capabilities for any LLM model.
 ---
 
-Look up pricing, context window, and capabilities for an LLM model. Uses fuzzy matching so you don't need the exact model key — `"sonnet 4.5"` works just as well as `"claude-sonnet-4-5-20250514"`.
+Look up pricing, context window, and capabilities for an LLM model. Uses fuzzy matching so you don't need the exact model key — `"opus 5.5"` works just as well as `"claude-opus-5-5"`.
 
 ## Input
 
 | Parameter | Type | Required | Description |
 |---|---|---|---|
-| `model_name` | string | Yes | Model name to look up (e.g. `claude-sonnet-4-5`, `gpt-4o`, `gemini-2.0-flash`) |
+| `model_name` | string | Yes | Model name to look up (e.g. `claude-opus-5-5`, `gpt-5.5`, `gemini-3.1-flash-lite`) |
 
 ## Example
+
+**Request:**
+
+```json
+{
+  "model_name": "claude-opus-5-5"
+}
+```
+
+**Response:**
+
+```
+Model: claude-opus-5-5
+Provider: anthropic
+Mode: chat
+
+Pricing (per 1M tokens):
+  Input:  $4.00
+  Output: $20.00
+
+Prompt Caching:
+  Cached input: $0.2000 / 1M tokens
+
+Context Window:
+  Max Input:  1.0M
+  Max Output: 128K
+  Max Tokens: 128K
+
+Capabilities: vision, function_calling
+```
+
+## Tiered pricing
+
+Some models (e.g. Claude Sonnet 4.5) have higher per-token rates above 200K tokens. When tiered pricing data is available, the response includes an additional section:
 
 **Request:**
 
@@ -32,43 +66,17 @@ Pricing (per 1M tokens):
   Input:  $3.00
   Output: $15.00
 
-Context Window:
-  Max Input:  200K
-  Max Output: 8K
-
-Capabilities: vision, function_calling, parallel_function_calling
-```
-
-## Tiered pricing
-
-Some models (e.g. Claude Opus, Sonnet) have higher per-token rates above 200K tokens. When tiered pricing data is available, the response includes an additional section:
-
-**Request:**
-
-```json
-{
-  "model_name": "claude-opus-4"
-}
-```
-
-**Response:**
-
-```
-Model: claude-opus-4
-Provider: anthropic
-Mode: chat
-
-Pricing (per 1M tokens):
-  Input:  $15.00
-  Output: $75.00
-
 Tiered Pricing (above 200K tokens, per 1M):
-  Input:  $30.00
-  Output: $150.00
+  Input:  $6.00
+  Output: $22.50
+
+Prompt Caching:
+  Cached input: $0.3000 / 1M tokens
 
 Context Window:
-  Max Input:  200K
-  Max Output: 32K
+  Max Input:  1.0M
+  Max Output: 64K
+  Max Tokens: 64K
 
 Capabilities: vision, function_calling
 ```

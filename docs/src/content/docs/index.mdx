@@ -17,6 +17,10 @@ hero:
 
 import { Card, CardGrid } from '@astrojs/starlight/components';
 
+## Why
+
+Ask a model what another model costs and it answers from training data that was stale before it shipped: retired prices, missing models, wrong context windows. tokencost gives your assistant a tool instead of a memory — live data for 4,400+ models from the registry LiteLLM uses for its own cost tracking, plus the arithmetic for tiered pricing, prompt caching, and cross-provider comparison.
+
 ## See it in action
 
 ![tokencost demo — ask pricing questions in natural language and get instant answers](/tokencost-dev.gif)
@@ -50,13 +54,13 @@ Or add the JSON config manually — see the [Getting Started](/getting-started/)
 
 ## Example: batch cost planning
 
-> "How much would it cost to run Claude Opus vs Sonnet for 10K requests, averaging 2K input and 500 output tokens each?"
+> "How much would it cost to run Claude Opus 5.5 vs Sonnet 5.5 for 10K requests, averaging 2K input and 500 output tokens each?"
 
 ```
-Claude Opus 4.6:   $450.00  (Input: $300 + Output: $150)
-Claude Sonnet 4.6: $135.00  (Input: $60  + Output: $75)
+Claude Opus 5.5:   $180.00  (Input: $80 + Output: $100)
+Claude Sonnet 5.5:  $90.00  (Input: $40 + Output: $50)
 ```
 
-Sonnet is 3.3x cheaper — saving $315 per 10K-request batch.
+Sonnet is half the price — saving $90 per 10K-request batch.
 
 [See more examples &rarr;](/examples/)

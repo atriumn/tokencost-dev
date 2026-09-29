@@ -12,6 +12,7 @@ Estimate the cost for a given number of input and output tokens on a specific mo
 | `model_name` | string | Yes | Model name (fuzzy matched) |
 | `input_tokens` | number | Yes | Number of input tokens |
 | `output_tokens` | number | Yes | Number of output tokens |
+| `cached_tokens` | number | No | Input tokens served from the prompt cache (must be ≤ `input_tokens`); billed at the cached rate |
 
 ## Example
 
@@ -19,7 +20,7 @@ Estimate the cost for a given number of input and output tokens on a specific mo
 
 ```json
 {
-  "model_name": "claude-sonnet-4-5",
+  "model_name": "claude-opus-5",
   "input_tokens": 1000,
   "output_tokens": 500
 }
@@ -28,38 +29,65 @@ Estimate the cost for a given number of input and output tokens on a specific mo
 **Response:**
 
 ```
-Cost Estimate for claude-sonnet-4-5
+Cost Estimate for claude-opus-5
 
-  Input:  1K tokens × $3.00/1M = $0.003000
-  Output: 500 tokens × $15.00/1M = $0.007500
+  Input:  1K tokens × $5.00/1M = $0.005000
+  Output: 500 tokens × $25.00/1M = $0.0125
   ─────────────────────────────
-  Total:  $0.0105
+  Total:  $0.0175
 ```
 
-## Tiered pricing
+## Prompt caching
 
-For models with tiered pricing (e.g. Claude Opus), the estimate automatically splits the cost at the 200K token threshold:
+Pass `cached_tokens` to price cache hits at the model's cached-input rate:
 
 **Request:**
 
 ```json
 {
-  "model_name": "claude-opus-4",
-  "input_tokens": 300000,
-  "output_tokens": 50000
+  "model_name": "claude-sonnet-5-5",
+  "input_tokens": 1000000,
+  "output_tokens": 100000,
+  "cached_tokens": 800000
 }
 ```
 
 **Response:**
 
 ```
-Cost Estimate for claude-opus-4
+Cost Estimate for claude-sonnet-5-5
 
-  Input (base):  200K tokens × $15.00/1M = $3.00
-  Input (>200K): 100K tokens × $30.00/1M = $3.00
-  Output: 50K tokens × $75.00/1M = $3.75
+  Cached input:   800K tokens × $0.2000/1M = $0.1600
+  Input:  200K tokens × $2.00/1M = $0.4000
+  Output: 100K tokens × $10.00/1M = $1.00
   ─────────────────────────────
-  Total:  $9.75
+  Total:  $1.56
+```
+
+## Tiered pricing
+
+For models with tiered pricing (e.g. Claude Sonnet 4.5), the estimate automatically splits the cost at the 200K token threshold:
+
+**Request:**
+
+```json
+{
+  "model_name": "claude-sonnet-4-5",
+  "input_tokens": 300000,
+  "output_tokens": 2000
+}
+```
+
+**Response:**
+
+```
+Cost Estimate for claude-sonnet-4-5
+
+  Input (base):  200K tokens × $3.00/1M = $0.6000
+  Input (>200K): 100K tokens × $6.00/1M = $0.6000
+  Output: 2K tokens × $15.00/1M = $0.0300
+  ─────────────────────────────
+  Total:  $1.23
 ```
 
 When token counts are at or below 200K, the standard flat-rate format is used even for tiered models.
