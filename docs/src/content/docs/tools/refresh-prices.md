@@ -15,8 +15,8 @@ No parameters — just call the tool.
 
 ```
 Pricing data refreshed successfully.
-Models loaded: 342
-Timestamp: 2025-06-15T12:00:00.000Z
+Models loaded: 4436
+Timestamp: 2026-09-29T22:49:18.691Z
 ```
 
 ## Notes

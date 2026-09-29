@@ -5,7 +5,7 @@ description: Frequently asked questions about tokencost — data freshness, accu
 
 ## Where does the pricing data come from?
 
-All data is sourced from the [LiteLLM community registry](https://github.com/BerriAI/litellm), an open-source, community-maintained dataset of LLM pricing and capabilities. It covers 300+ models across all major providers.
+All data is sourced from the [LiteLLM community registry](https://github.com/BerriAI/litellm), an open-source, community-maintained dataset of LLM pricing and capabilities. It covers 4,400+ models across all major providers and resellers.
 
 ## How fresh is the data?
 
@@ -15,7 +15,7 @@ There's also a disk cache at `.cache/prices.json` that serves as a fallback if t
 
 ## What if a model isn't found?
 
-tokencost uses **fuzzy matching** — you don't need the exact model ID. For example, "claude sonnet" will match `claude-sonnet-4-5`, and "gpt4o" will match `gpt-4o`.
+tokencost uses **fuzzy matching** — you don't need the exact model ID. For example, "opus 5.5" will match `claude-opus-5-5`, and "gpt 5.5" will match `gpt-5.5`. Short, ambiguous names like "claude sonnet" resolve to *a* Sonnet model, not necessarily the newest — include the version number when it matters.
 
 If the model genuinely isn't in the registry, the tool will return an error saying the model wasn't found. This usually means either:
 - The model is very new and hasn't been added to LiteLLM yet
@@ -52,7 +52,7 @@ Any client that supports the MCP stdio transport works with tokencost. See [Gett
 
 ## The server won't start — what do I check?
 
-1. **Node.js version** — Run `node -v` and ensure you have 18+
+1. **Node.js version** — Run `node -v` and ensure you have 18+ (22+ recommended)
 2. **npx cache** — Try `npx -y tokencost-dev` directly in your terminal to see if it starts
 3. **Network** — The first run needs network access to fetch pricing data
 4. **Permissions** — Ensure your MCP client has permission to spawn local processes

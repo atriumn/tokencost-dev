@@ -111,24 +111,28 @@ Consult your client's documentation for where to place this configuration.
 
 Once installed, just ask your AI assistant a pricing question in natural language:
 
-> "How much does Claude Sonnet 4.5 cost per million tokens?"
+> "How much does Claude Opus 5.5 cost per million tokens?"
 
 The assistant will call the `get_model_details` tool and return something like:
 
 ```
-Model: claude-sonnet-4-5
+Model: claude-opus-5-5
 Provider: anthropic
 Mode: chat
 
 Pricing (per 1M tokens):
-  Input:  $3.00
-  Output: $15.00
+  Input:  $4.00
+  Output: $20.00
+
+Prompt Caching:
+  Cached input: $0.2000 / 1M tokens
 
 Context Window:
-  Max Input:  200K
-  Max Output: 8K
+  Max Input:  1.0M
+  Max Output: 128K
+  Max Tokens: 128K
 
-Capabilities: vision, function_calling, parallel_function_calling
+Capabilities: vision, function_calling
 ```
 
 ## How it works
