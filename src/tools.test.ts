@@ -230,7 +230,7 @@ describe("executeTool", () => {
 
       const text = result.content[0].text;
       expect(text).toContain("Cost Estimate for gpt-4o");
-      expect(text).toContain("$0.00000000");
+      expect(text).toContain("Total:  $0.00");
     });
 
     it("handles large token counts", async () => {
@@ -339,6 +339,113 @@ describe("executeTool", () => {
       expect(text).toContain("gpt-4o");
       // embedding model should be excluded by mode filter
       expect(text).not.toContain("text-embedding");
+    });
+  });
+
+  describe("compare_models provider matching and unpriced entries", () => {
+    const noisyModels: Record<string, ModelEntry> = {
+      ...testModels,
+      "gradient_ai/openai-gpt-4o": makeModel({
+        key: "gradient_ai/openai-gpt-4o",
+        litellm_provider: "gradient_ai",
+        input_cost_per_token: 0,
+        output_cost_per_token: 0,
+        input_cost_per_million: 0,
+        output_cost_per_million: 0,
+      }),
+      "openrouter/openai/gpt-oss-20b": makeModel({
+        key: "openrouter/openai/gpt-oss-20b",
+        litellm_provider: "openrouter",
+        input_cost_per_token: 0.00000002,
+        output_cost_per_token: 0.00000009,
+        input_cost_per_million: 0.02,
+        output_cost_per_million: 0.09,
+      }),
+      "openai/container": makeModel({
+        key: "openai/container",
+        litellm_provider: "openai",
+        input_cost_per_token: 0,
+        output_cost_per_token: 0,
+        input_cost_per_million: 0,
+        output_cost_per_million: 0,
+      }),
+      "gemini/gemini-3-flash": makeModel({
+        key: "gemini/gemini-3-flash",
+        litellm_provider: "gemini",
+        input_cost_per_token: 0.0000005,
+        output_cost_per_token: 0.000003,
+        input_cost_per_million: 0.5,
+        output_cost_per_million: 3.0,
+      }),
+      "gemini-3-pro": makeModel({
+        key: "gemini-3-pro",
+        litellm_provider: "vertex_ai-language-models",
+      }),
+      "anthropic.claude-sonnet-5": makeModel({
+        key: "anthropic.claude-sonnet-5",
+        litellm_provider: "bedrock_converse",
+      }),
+    };
+
+    beforeEach(() => {
+      vi.mocked(getModels).mockResolvedValue(noisyModels);
+    });
+
+    it("matches the provider exactly, not resellers whose key mentions it", async () => {
+      const result = await executeTool("compare_models", { provider: "openai", mode: "chat" });
+      const text = result.content[0].text;
+      expect(text).toContain("gpt-4o-mini");
+      expect(text).not.toContain("openrouter");
+      expect(text).not.toContain("gradient_ai");
+    });
+
+    it("excludes models without pricing data and reports how many", async () => {
+      const result = await executeTool("compare_models", { provider: "openai", mode: "chat" });
+      const text = result.content[0].text;
+      expect(text).not.toContain("openai/container");
+      expect(text).toContain("1 without pricing data excluded");
+      expect(text.indexOf("1. gpt-4o-mini")).toBeGreaterThan(-1);
+    });
+
+    it("collapses dated snapshots that duplicate an alias's pricing", async () => {
+      vi.mocked(getModels).mockResolvedValue({
+        ...noisyModels,
+        "gpt-4o-mini-2024-07-18": makeModel({
+          ...testModels["gpt-4o-mini"],
+          key: "gpt-4o-mini-2024-07-18",
+        }),
+        "gpt-4o-2024-05-13": makeModel({
+          ...testModels["gpt-4o"],
+          key: "gpt-4o-2024-05-13",
+          input_cost_per_token: 0.00001,
+          input_cost_per_million: 10.0,
+        }),
+      });
+      const result = await executeTool("compare_models", { provider: "openai", mode: "chat" });
+      const text = result.content[0].text;
+      expect(text).not.toContain("gpt-4o-mini-2024-07-18");
+      // Different pricing from its alias, so it stays
+      expect(text).toContain("gpt-4o-2024-05-13");
+    });
+
+    it("maps google to gemini and vertex_ai providers", async () => {
+      const result = await executeTool("compare_models", { provider: "google" });
+      const text = result.content[0].text;
+      expect(text).toContain("gemini/gemini-3-flash");
+      expect(text).toContain("gemini-3-pro");
+      expect(text).not.toContain("gpt-4o");
+    });
+
+    it("maps amazon to bedrock provider family", async () => {
+      const result = await executeTool("compare_models", { provider: "amazon" });
+      const text = result.content[0].text;
+      expect(text).toContain("anthropic.claude-sonnet-5");
+      expect(text).toContain("bedrock_converse");
+    });
+
+    it("returns no-match message when every candidate is unpriced", async () => {
+      const result = await executeTool("compare_models", { provider: "gradient_ai" });
+      expect(result.content[0].text).toContain("No models match the given criteria");
     });
   });
 

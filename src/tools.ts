@@ -102,10 +102,36 @@ const compareModelsSchema = z.object({
 });
 
 function formatCost(amount: number): string {
+  if (amount === 0) return "$0.00";
   if (amount < 0.0001) return `$${amount.toFixed(8)}`;
   if (amount < 0.01) return `$${amount.toFixed(6)}`;
   if (amount < 1) return `$${amount.toFixed(4)}`;
   return `$${amount.toFixed(2)}`;
+}
+
+const DATED_SNAPSHOT_SUFFIX = /-(\d{4}-\d{2}-\d{2}|\d{8})$/;
+
+// Friendly provider names mapped to LiteLLM provider prefixes
+const PROVIDER_ALIASES: Record<string, string[]> = {
+  google: ["gemini", "vertex_ai"],
+  amazon: ["bedrock"],
+  aws: ["bedrock"],
+  microsoft: ["azure"],
+};
+
+/**
+ * Match a LiteLLM provider against a user-supplied provider name. Matches the
+ * provider exactly or as a family prefix (e.g. "vertex_ai" matches
+ * "vertex_ai-language-models", "bedrock" matches "bedrock_converse"), so
+ * "openai" no longer pulls in resellers like openrouter or gradient_ai.
+ */
+export function matchesProvider(litellmProvider: string, provider: string): boolean {
+  const actual = litellmProvider.toLowerCase();
+  const wanted = provider.toLowerCase().trim();
+  const prefixes = PROVIDER_ALIASES[wanted] ?? [wanted];
+  return prefixes.some(
+    (p) => actual === p || actual.startsWith(`${p}_`) || actual.startsWith(`${p}-`),
+  );
 }
 
 function formatTokenCount(n: number | null): string {
@@ -355,12 +381,7 @@ export async function executeTool(
         let filtered = Object.values(models);
 
         if (provider) {
-          const lowerProvider = provider.toLowerCase();
-          filtered = filtered.filter(
-            (m) =>
-              m.litellm_provider.toLowerCase().includes(lowerProvider) ||
-              m.key.toLowerCase().includes(lowerProvider),
-          );
+          filtered = filtered.filter((m) => matchesProvider(m.litellm_provider, provider));
         }
 
         if (min_context !== undefined) {
@@ -373,6 +394,27 @@ export async function executeTool(
           const lowerMode = mode.toLowerCase();
           filtered = filtered.filter((m) => m.mode.toLowerCase() === lowerMode);
         }
+
+        // Registry entries with no pricing data would otherwise sort first as "free"
+        const unpriced = filtered.filter(
+          (m) => m.input_cost_per_token === 0 && m.output_cost_per_token === 0,
+        ).length;
+        filtered = filtered.filter(
+          (m) => m.input_cost_per_token > 0 || m.output_cost_per_token > 0,
+        );
+
+        // Drop dated snapshots (gpt-5-nano-2025-08-07, claude-haiku-4-5-20251001)
+        // when their undated alias is present with identical pricing
+        const byKey = new Map(filtered.map((m) => [m.key, m]));
+        filtered = filtered.filter((m) => {
+          const alias = byKey.get(m.key.replace(DATED_SNAPSHOT_SUFFIX, ""));
+          return (
+            !alias ||
+            alias === m ||
+            alias.input_cost_per_token !== m.input_cost_per_token ||
+            alias.output_cost_per_token !== m.output_cost_per_token
+          );
+        });
 
         if (filtered.length === 0) {
           return {
@@ -402,7 +444,9 @@ export async function executeTool(
               : ""),
         );
 
-        const total = `\n(${filtered.length} models matched total)`;
+        const total =
+          `\n(${filtered.length} models matched total` +
+          (unpriced > 0 ? `; ${unpriced} without pricing data excluded)` : ")");
 
         return {
           content: [{ type: "text", text: header + rows.join("\n\n") + total }],
